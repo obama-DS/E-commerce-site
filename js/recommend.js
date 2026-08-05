@@ -389,7 +389,7 @@
   if (window.React && window.ReactDOM && window.htm) {
     var React2 = window.React;
     var htm = window.htm;
-    var html = (window.MotionHtm || htm.bind)(React2.createElement);
+    var html = htm.bind(React2.createElement);
     var useState = React2.useState;
     var useEffect = React2.useEffect;
     var useRef = React2.useRef;
@@ -424,7 +424,7 @@
       `;
     }
 
-    RecCard = function RecCard({ product, onOpen, showReason, index }) {
+    RecCard = function RecCard({ product, onOpen, showReason }) {
       var helpers = window.StoreHelpers;
       var favState = useState(helpers ? helpers.isFavoriteProduct(product.id) : false);
       var isFav = favState[0];
@@ -442,38 +442,10 @@
           img.src = candidate;
         }
       };
-      var cardEnter = {
-        opacity: 0,
-        y: 14
-      };
-      var cardShow = {
-        opacity: 1,
-        y: 0
-      };
-      var cardTransition = {
-        duration: 0.4,
-        ease: 'easeOut',
-        delay: Math.min((index || 0) * 0.06, 0.6)
-      };
       return html`
-        <motion.article
-          className="rec-card"
-          initial=${cardEnter}
-          animate=${cardShow}
-          transition=${cardTransition}
-          whileHover=${{ y: -5 }}
-          whileTap=${{ scale: 0.985 }}
-        >
+        <article className="rec-card">
           <button type="button" className="rec-card-img" onClick=${() => (onOpen || openProduct)(product.id)} aria-label=${'View ' + product.title}>
-            <motion.img
-              src=${product.imageUrl}
-              alt=${product.title}
-              loading="lazy"
-              decoding="async"
-              onError=${onImgError}
-              whileHover=${{ scale: 1.045 }}
-              transition=${{ duration: 0.25, ease: 'easeOut' }}
-            />
+            <img src=${product.imageUrl} alt=${product.title} loading="lazy" decoding="async" onError=${onImgError} />
             ${product.badge ? html`<span className="rec-card-badge">${product.badge}</span>` : null}
           </button>
           <div className="rec-card-body">
@@ -503,7 +475,7 @@
             </div>
             ${showReason && product.reason ? html`<span className="rec-card-reason">${product.reason}</span>` : null}
           </div>
-        </motion.article>
+        </article>
       `;
     };
 
@@ -517,13 +489,7 @@
       var isGrid = variant === 'grid';
 
       return html`
-        <motion.section
-          className="rec-section"
-          aria-labelledby=${slotId}
-          initial=${{ opacity: 0 }}
-          animate=${{ opacity: 1 }}
-          transition=${{ duration: 0.45, ease: 'easeOut' }}
-        >
+        <section className="rec-section" aria-labelledby=${slotId}>
           <div className="rec-heading">
             <div className="rec-heading-text">
               ${reason ? html`<p className="eyebrow">${reason}</p>` : null}
@@ -537,11 +503,11 @@
             `}
           </div>
           <div className=${isGrid ? 'rec-grid' : 'rec-row'} ref=${ref}>
-            ${products.map(function (p, i) {
-              return html`<${RecCard} key=${p.recommendKey || p.id} index=${i} product=${p} onOpen=${onOpen} showReason=${showReason} />`;
+            ${products.map(function (p) {
+              return html`<${RecCard} key=${p.recommendKey || p.id} product=${p} onOpen=${onOpen} showReason=${showReason} />`;
             })}
           </div>
-        </motion.section>
+        </section>
       `;
     };
 

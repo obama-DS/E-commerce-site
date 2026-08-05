@@ -82,16 +82,9 @@
 
     document.querySelectorAll('[data-page]').forEach((section) => {
       const active = section.dataset.page === name;
-      section.classList.remove('page-fade-in');
       section.hidden = !active;
       section.classList.toggle('is-active-page', active);
     });
-
-    const activeSection = document.querySelector(`[data-page="${name}"]`);
-    if (activeSection) {
-      void activeSection.offsetWidth;
-      activeSection.classList.add('page-fade-in');
-    }
 
     document.querySelectorAll('[data-route]').forEach((link) => {
       link.classList.toggle('is-active', link.getAttribute('href') === `#/${name}`);
