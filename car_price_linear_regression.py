@@ -26,7 +26,7 @@ def build_pipeline(numeric_features, categorical_features):
     numeric_transformer = StandardScaler()
     categorical_transformer = OneHotEncoder(drop='first', handle_unknown='ignore')
 
-    preprocessor = ColumnTransformer(
+    preprocesso  = ColumnTransformer(
         transformers=[
             ('num', numeric_transformer, numeric_features),
             ('cat', categorical_transformer, categorical_features),
