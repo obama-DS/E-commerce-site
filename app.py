@@ -510,6 +510,12 @@ async def startup_event() -> None:
     rec_engine = RecommendationEngine(PRODUCTS, car_values=car_values)
     kb._init_db()
     _ensure_admin()
+    assistant.configure(
+        car_catalog_getter=lambda: car_catalog,
+        kb=kb,
+        contact=STORE_CONTACT,
+        recommend_cars_fn=_recommend_cars,
+    )
 
 
 @app.get('/api/trending-cars')
