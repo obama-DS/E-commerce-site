@@ -896,6 +896,7 @@ def _extract_query(text: str) -> str:
         'do you have', 'have you got', 'are you selling', 'is there any',
         'looking for', 'search for', 'find me', 'show me', 'in stock',
         'price of', 'cost of', 'how much is', 'what is the price of',
+        'i want to buy', 'i want to order', 'buy me', 'get me',
         'what about', 'i want', 'i need',
     ):
         index = cleaned.find(prefix)
