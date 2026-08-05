@@ -22,7 +22,7 @@
     profile: { label: 'My Account' },
     recommendations: { label: 'Car Recommender' },
     kb: { label: 'Knowledge Base' }
-  };#this
+  };
 
   function parseLocation() {
     const raw = window.location.hash.replace(/^#/, '').trim();
