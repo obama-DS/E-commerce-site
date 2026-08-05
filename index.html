@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obama Store · Modern E-commerce</title>
+    <meta name="description" content="Obama Store — electronics, cars, wearables, fashion and daily essentials with smart recommendations.">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/product.css">
+    <link rel="stylesheet" href="css/recommend.css">
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- ============================================================
+         NAVBAR
+         ============================================================ -->
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a class="brand" href="#/home" data-route="home" aria-label="Obama Store home">
+                <span class="brand-mark" aria-hidden="true">O</span>
+                <span class="brand-text">
+                    <strong>Obama Store</strong>
+                    <small>Everything you need</small>
+                </span>
+            </a>
+
+            <nav class="primary-nav" aria-label="Primary navigation">
+                <a href="#/home" data-route="home">Home</a>
+                <a href="#/products" data-route="products">Products</a>
+                <a href="#/categories" data-route="categories">Categories</a>
+                <a href="#/about" data-route="about">About</a>
+                <a href="#/contact" data-route="contact">Contact</a>
+            </nav>
+
+            <div class="navbar-actions">
+                <label class="search-shell" for="headerSearch">
+                    <span aria-hidden="true">🔎</span>
+                    <input type="search" placeholder="Search products..." id="headerSearch" aria-label="Search products">
+                </label>
+                <button type="button" class="icon-button" id="themeToggle" aria-label="Toggle color mode">🌙</button>
+                <a class="nav-icon" href="#/wishlist" data-route="wishlist" aria-label="Wishlist" title="Wishlist">
+                    <span aria-hidden="true">♥</span>
+                    <span class="badge accent" id="wishlistCount">0</span>
+                </a>
+                <a class="nav-icon" href="#/cart" data-route="cart" aria-label="Cart" title="Cart">
+                    <span aria-hidden="true">🛒</span>
+                    <span class="badge" id="cartCount">0</span>
+                </a>
+                <a class="nav-icon" href="#/profile" data-route="profile" aria-label="My account" title="My account">
+                    <span aria-hidden="true">👤</span>
+                </a>
+                <button type="button" class="icon-button menu-toggle" id="menuToggle" aria-label="Open menu" aria-controls="menuDrawer" aria-expanded="false">
+                    ☰
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         MOBILE MENU DRAWER
+         ============================================================ -->
+    <div class="drawer-backdrop" id="menuBackdrop" hidden></div>
+    <aside class="menu-drawer" id="menuDrawer" aria-hidden="true" aria-label="Mobile navigation">
+        <div class="menu-drawer-header">
+            <span class="brand-mark" aria-hidden="true">O</span>
+            <span class="brand-text">
+                <strong>Obama Store</strong>
+                <small>Menu</small>
+            </span>
+            <button type="button" class="icon-button" id="menuCloseBtn" aria-label="Close menu">✕</button>
+        </div>
+
+        <nav class="menu-drawer-nav" aria-label="Mobile navigation">
+            <a href="#/home" data-route="home"><span aria-hidden="true">🏠</span> Home</a>
+            <a href="#/products" data-route="products"><span aria-hidden="true">🛍️</span> Products</a>
+            <a href="#/categories" data-route="categories"><span aria-hidden="true">🗂️</span> Categories</a>
+            <a href="#/about" data-route="about"><span aria-hidden="true">ℹ️</span> About</a>
+            <a href="#/contact" data-route="contact"><span aria-hidden="true">✉️</span> Contact</a>
+            <a href="#/cart" data-route="cart"><span aria-hidden="true">🛒</span> Cart<span class="nav-icon-label" id="menuCartCount">0 items</span></a>
+            <a href="#/wishlist" data-route="wishlist"><span aria-hidden="true">♥</span> Wishlist<span class="nav-icon-label" id="menuWishlistCount">0 saved</span></a>
+            <a href="#/profile" data-route="profile"><span aria-hidden="true">👤</span> My Account</a>
+        </nav>
+
+        <div class="menu-drawer-footer">
+            <p>New season • Fast delivery • Smart recommendations</p>
+        </div>
+    </aside>
+
+    <!-- ============================================================
+         PAGES
+         ============================================================ -->
+    <main id="main">
+        <!-- HOME -->
+        <section class="page" data-page="home" aria-labelledby="home-title">
+            <div id="homeMount"></div>
+        </section>
+
+        <!-- PRODUCT DETAILS -->
+        <section class="page" data-page="product" aria-labelledby="product-page-title">
+            <div id="productMount"></div>
+        </section>
+
+        <!-- PRODUCTS -->
+        <section class="page" data-page="products" id="productsPage" aria-labelledby="products-title">
+            <div class="product-section">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Featured collection</p>
+                        <h2 id="products-title">Curated picks for every need</h2>
+                    </div>
+                    <div class="section-pill">Search instantly</div>
+                </div>
+
+                <div class="search-section">
+                    <div class="search-row">
+                        <label class="sr-only" for="searchInput">Search products</label>
+                        <input type="text" id="searchInput" placeholder="Search products by name, feature, or keyword">
+                        <button type="button" id="productSearchBtn">Search</button>
+                    </div>
+                    <div class="product-toolbar">
+                        <label>
+                            <span>Category</span>
+                            <select id="productCategoryFilter">
+                                <option value="all">All products</option>
+                                <option value="cars">Cars</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="mobile">Mobile</option>
+                                <option value="wearables">Wearables</option>
+                                <option value="fashion">Fashion</option>
+                                <option value="accessories">Accessories</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>Sort by</span>
+                            <select id="productSortSelect">
+                                <option value="featured">Featured</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                                <option value="name">Name</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="category-pills" role="group" aria-label="Product categories">
+                        <button type="button" class="category-pill is-active" data-category-pill="all">All</button>
+                        <button type="button" class="category-pill" data-category-pill="cars">Cars</button>
+                        <button type="button" class="category-pill" data-category-pill="electronics">Electronics</button>
+                        <button type="button" class="category-pill" data-category-pill="mobile">Mobile</button>
+                        <button type="button" class="category-pill" data-category-pill="wearables">Wearables</button>
+                        <button type="button" class="category-pill" data-category-pill="fashion">Fashion</button>
+                        <button type="button" class="category-pill" data-category-pill="accessories">Accessories</button>
+                    </div>
+                    <div class="product-toolbar-row">
+                        <p class="search-hint" id="productResultsSummary">Showing all featured products.</p>
+                        <p class="search-hint">Try cars, phones, laptops, fashion, or accessories.</p>
+                    </div>
+                    <div id="favoritesPanel" class="favorites-panel"></div>
+                    <div id="compareSummary" class="compare-summary">Select up to 3 products to compare.</div>
+                </div>
+
+                <div class="product-grid" id="productGrid">
+                    <article class="product-card" data-product-id="toyota-corolla-altis-cars" data-search="toyota corolla altis sedan petrol automatic 2018" data-product-role="featured" data-category="cars" data-price="1650000" data-title="Toyota Corolla Altis 1.8 VL CVT">
+                        <div class="product-image-wrap">
+                            <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80" alt="Toyota Corolla Altis" loading="lazy" decoding="async">
+                            <span class="product-badge">Best seller</span>
+                        </div>
+                        <div class="product-body">
+                            <h3>Toyota Corolla Altis 1.8 VL CVT</h3>
+                            <p class="product-description">2018 • 25,000 km • Petrol • Automatic • First owner.</p>
+                            <div class="product-meta"><span>Automatic</span><span>Petrol</span><span>25K km</span></div>
+                            <div class="product-footer">
+                                <p class="price">ETB 1,650,000</p>
+                                <div class="product-actions">
+                                    <button class="add-cart-btn" type="button">Add to cart</button>
+                                    <button class="view-details-btn" type="button">View details</button>
+                                    <button class="edit-product-btn" type="button">Edit</button>
+                                    <button class="remove-product-btn" type="button">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-product-id="iphone-15-pro-max-mobile" data-search="iphone 15 pro max smartphone mobile 256gb" data-product-role="featured" data-category="mobile" data-price="1199" data-title="iPhone 15 Pro Max">
+                        <div class="product-image-wrap">
+                            <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=900&q=80" alt="iPhone 15 Pro Max" loading="lazy" decoding="async">
+                            <span class="product-badge">New arrival</span>
+                        </div>
+                        <div class="product-body">
+                            <h3>iPhone 15 Pro Max</h3>
+                            <p class="product-description">256GB • Titanium • 5G • Pro camera system.</p>
+                            <div class="product-meta"><span>256GB</span><span>5G</span><span>Pro camera</span></div>
+                            <div class="product-footer">
+                                <p class="price">$1,199.00</p>
+                                <div class="product-actions">
+                                    <button class="add-cart-btn" type="button">Add to cart</button>
+                                    <button class="view-details-btn" type="button">View details</button>
+                                    <button class="edit-product-btn" type="button">Edit</button>
+                                    <button class="remove-product-btn" type="button">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-product-id="macbook-air-m2-electronics" data-search="macbook air laptop electronics 16gb 512gb" data-product-role="featured" data-category="electronics" data-price="1399" data-title="MacBook Air M2">
+                        <div class="product-image-wrap">
+                            <img src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=900&q=80" alt="MacBook Air M2" loading="lazy" decoding="async">
+                            <span class="product-badge">Hot deal</span>
+                        </div>
+                        <div class="product-body">
+                            <h3>MacBook Air M2</h3>
+                            <p class="product-description">16GB RAM • 512GB SSD • 13.6-inch Liquid Retina display.</p>
+                            <div class="product-meta"><span>M2 chip</span><span>512GB SSD</span><span>16GB RAM</span></div>
+                            <div class="product-footer">
+                                <p class="price">$1,399.00</p>
+                                <div class="product-actions">
+                                    <button class="add-cart-btn" type="button">Add to cart</button>
+                                    <button class="view-details-btn" type="button">View details</button>
+                                    <button class="edit-product-btn" type="button">Edit</button>
+                                    <button class="remove-product-btn" type="button">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-product-id="apple-watch-series-9-wearables" data-search="apple watch wearable smartwatch gps" data-product-role="featured" data-category="wearables" data-price="249" data-title="Apple Watch Series 9">
+                        <div class="product-image-wrap">
+                            <img src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=900&q=80" alt="Apple Watch Series 9" loading="lazy" decoding="async">
+                            <span class="product-badge">Trending</span>
+                        </div>
+                        <div class="product-body">
+                            <h3>Apple Watch Series 9</h3>
+                            <p class="product-description">GPS • 45mm • Stainless steel • Health tracking.</p>
+                            <div class="product-meta"><span>GPS</span><span>Health tracking</span><span>45mm</span></div>
+                            <div class="product-footer">
+                                <p class="price">$249.00</p>
+                                <div class="product-actions">
+                                    <button class="add-cart-btn" type="button">Add to cart</button>
+                                    <button class="view-details-btn" type="button">View details</button>
+                                    <button class="edit-product-btn" type="button">Edit</button>
+                                    <button class="remove-product-btn" type="button">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-product-id="nike-windbreaker-fashion" data-search="nike jacket clothes fashion winter" data-product-role="featured" data-category="fashion" data-price="89" data-title="Nike Windbreaker Jacket">
+                        <div class="product-image-wrap">
+                            <img src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80" alt="Nike Windbreaker Jacket" loading="lazy" decoding="async">
+                            <span class="product-badge">Style pick</span>
+                        </div>
+                        <div class="product-body">
+                            <h3>Nike Windbreaker Jacket</h3>
+                            <p class="product-description">Water-resistant shell • Lightweight • Available in black and gray.</p>
+                            <div class="product-meta"><span>Water resistant</span><span>Lightweight</span></div>
+                            <div class="product-footer">
+                                <p class="price">$89.00</p>
+                                <div class="product-actions">
+                                    <button class="add-cart-btn" type="button">Add to cart</button>
+                                    <button class="view-details-btn" type="button">View details</button>
+                                    <button class="edit-product-btn" type="button">Edit</button>
+                                    <button class="remove-product-btn" type="button">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="product-card" data-product-id="sony-wh1000xm5-accessories" data-search="wireless headphones accessory audio noise cancelling" data-product-role="featured" data-category="accessories" data-price="159" data-title="Sony WH-1000XM5">
+                        <div class="product-image-wrap">
+                            <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=80" alt="Sony headphones" loading="lazy" decoding="async">
+                            <span class="product-badge">Audio favorite</span>
+                        </div>
+                        <div class="product-body">
+                            <h3>Sony WH-1000XM5</h3>
+                            <p class="product-description">Noise cancelling • 30-hour battery • Comfort fit.</p>
+                            <div class="product-meta"><span>Noise cancelling</span><span>30h battery</span></div>
+                            <div class="product-footer">
+                                <p class="price">$159.00</p>
+                                <div class="product-actions">
+                                    <button class="add-cart-btn" type="button">Add to cart</button>
+                                    <button class="view-details-btn" type="button">View details</button>
+                                    <button class="edit-product-btn" type="button">Edit</button>
+                                    <button class="remove-product-btn" type="button">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+
+            <div id="productsRecMount" data-recommend-slot="recommended"></div>
+
+            <section id="owner" class="owner-section section-card">
+                <h2>Owner Dashboard</h2>
+                <p>Add new products to your store with image, description, price, and search tags.</p>
+                <form id="ownerForm">
+                    <label>
+                        Product Title
+                        <input type="text" id="newTitle" required>
+                    </label>
+                    <label>
+                        Image URL
+                        <input type="url" id="newImage" placeholder="https://example.com/product.jpg" required>
+                    </label>
+                    <label>
+                        Price
+                        <input type="text" id="newPrice" placeholder="e.g. 299.99" required>
+                    </label>
+                    <label>
+                        Description
+                        <textarea id="newDescription" rows="3" required></textarea>
+                    </label>
+                    <label>
+                        Search Tags
+                        <input type="text" id="newTags" placeholder="laptop windows ram storage">
+                    </label>
+                    <button type="submit">Add Product</button>
+                    <button type="button" id="resetOwnerForm">Reset</button>
+                </form>
+                <img id="productPreview" alt="Product preview" style="display:none; max-width:200px; margin-top:12px;" />
+                <div id="ownerMessage" class="owner-message"></div>
+            </section>
+
+            <section id="marketplace" class="marketplace-section section-card">
+                <h2>Marketplace Products</h2>
+                <p>Load example products from Amazon-style and Express-style sellers.</p>
+                <button type="button" id="loadMarketplaceBtn">Load marketplace products</button>
+                <button type="button" id="clearMarketplaceBtn">Clear marketplace products</button>
+                <div id="marketplaceGrid" class="product-grid" style="margin-top: 16px;"></div>
+            </section>
+        </section>
+
+        <!-- CATEGORIES -->
+        <section class="page" data-page="categories" aria-labelledby="categories-title">
+            <div class="section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Browse the store</p>
+                        <h2 id="categories-title">Shop by category</h2>
+                    </div>
+                    <span class="section-pill">7 collections</span>
+                </div>
+                <p class="category-intro">Pick a collection to browse matching products. You can refine further with search and filters on the products page.</p>
+                <div class="category-grid">
+                    <a class="category-card" href="#/products?category=all">
+                        <span class="category-icon" aria-hidden="true">✨</span>
+                        <strong>All products</strong>
+                        <span>Browse the full catalog</span>
+                    </a>
+                    <a class="category-card" href="#/products?category=cars">
+                        <span class="category-icon" aria-hidden="true">🚗</span>
+                        <strong>Cars</strong>
+                        <span>Sedans, SUVs &amp; more</span>
+                    </a>
+                    <a class="category-card" href="#/products?category=electronics">
+                        <span class="category-icon" aria-hidden="true">💻</span>
+                        <strong>Electronics</strong>
+                        <span>Laptops &amp; gadgets</span>
+                    </a>
+                    <a class="category-card" href="#/products?category=mobile">
+                        <span class="category-icon" aria-hidden="true">📱</span>
+                        <strong>Mobile</strong>
+                        <span>Phones &amp; tablets</span>
+                    </a>
+                    <a class="category-card" href="#/products?category=wearables">
+                        <span class="category-icon" aria-hidden="true">⌚</span>
+                        <strong>Wearables</strong>
+                        <span>Smartwatches &amp; bands</span>
+                    </a>
+                    <a class="category-card" href="#/products?category=fashion">
+                        <span class="category-icon" aria-hidden="true">👕</span>
+                        <strong>Fashion</strong>
+                        <span>Apparel &amp; style</span>
+                    </a>
+                    <a class="category-card" href="#/products?category=accessories">
+                        <span class="category-icon" aria-hidden="true">🎧</span>
+                        <strong>Accessories</strong>
+                        <span>Headphones &amp; extras</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABOUT -->
+        <section class="page" data-page="about" aria-labelledby="about-title">
+            <div class="section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Our story</p>
+                        <h2 id="about-title">About Obama Store</h2>
+                    </div>
+                    <span class="section-pill">Est. in Addis Ababa</span>
+                </div>
+                <p>This is Obama online store, where you can purchase electronics and everyday essentials.</p>
+                <p>This site now includes a polished storefront experience, practical product management, and smart car recommendations.</p>
+            </div>
+
+            <div class="info-section section-card">
+                <h2>Store Info</h2>
+                <p>Obama Store is a simple online shop for electronics, books, clothes and daily essentials.</p>
+                <p>We deliver inside Addis Ababa and nearby areas with easy ordering and friendly service.</p>
+            </div>
+
+            <div class="terms-section section-card">
+                <h2>Terms and Services</h2>
+                <p>By using this site, you agree to order carefully and share correct delivery details.</p>
+                <p>Orders are confirmed by phone or email, and returns are handled through our contact page.</p>
+            </div>
+
+            <div class="payment-section section-card">
+                <h2>Payment Options</h2>
+                <p>Choose Telebirr or CBE Pay to complete your order. After payment, enter the transaction ID so we can confirm your purchase.</p>
+                <form action="#" method="post">
+                    <fieldset>
+                        <legend>Payment Method</legend>
+                        <label><input type="radio" name="payment_method" value="telebirr" checked> Telebirr</label>
+                        <label><input type="radio" name="payment_method" value="cbe"> CBE Pay</label>
+                    </fieldset>
+                    <label>
+                        Your name
+                        <input type="text" name="payment_name" required>
+                    </label>
+                    <label>
+                        Phone or account number
+                        <input type="text" name="payment_account" required>
+                    </label>
+                    <label>
+                        Transaction ID
+                        <input type="text" name="payment_txn" required>
+                    </label>
+                    <button type="submit">Submit Payment</button>
+                </form>
+                <p class="payment-note">Send your payment via Telebirr or CBE Pay and keep the reference code for confirmation.</p>
+            </div>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="page" data-page="contact" aria-labelledby="contact-title">
+            <div class="contact-section section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Get in touch</p>
+                        <h2 id="contact-title">Contact Us</h2>
+                    </div>
+                    <span class="section-pill">We reply fast</span>
+                </div>
+                <form action="mailto:obamaabrahama@gmail.com?subject=Contact%20Form" method="post" enctype="text/plain">
+                    <label>
+                        Full name
+                        <input type="text" name="fullname" required>
+                    </label>
+                    <label>
+                        Email
+                        <input type="email" name="email" required>
+                    </label>
+                    <label>
+                        Phone number
+                        <input type="tel" name="phone">
+                    </label>
+                    <label>
+                        Select delivery date
+                        <input type="date" name="delivery">
+                    </label>
+                    <button type="submit">Submit</button>
+                    <input type="reset" value="Reset">
+                </form>
+            </div>
+
+            <div class="feedback-section section-card">
+                <h2>Feedback</h2>
+                <p>Send us a quick message about your experience. We read every note.</p>
+                <form action="mailto:obamaabrahama@gmail.com?subject=Feedback%20Form" method="post" enctype="text/plain">
+                    <label>
+                        Name
+                        <input type="text" name="feedback_name">
+                    </label>
+                    <label>
+                        Email
+                        <input type="email" name="feedback_email">
+                    </label>
+                    <label>
+                        Message
+                        <textarea name="feedback_message" rows="4"></textarea>
+                    </label>
+                    <button type="submit">Send Feedback</button>
+                </form>
+            </div>
+
+            <div class="section-card location-section">
+                <h2>Our Location</h2>
+                <a href="https://maps.google.com/?q=Addis+Ababa,EthiopiaA">Addis Ababa location</a>
+                <a href="https://www.facebook.com/obamastore">Facebook</a>
+                <a href="https://t.me/obama12300" target="_blank">Telegram</a>
+                <a href="obamaabrahama@gmail.com">Gmail</a>
+            </div>
+        </section>
+
+        <!-- CART -->
+        <section class="page" data-page="cart" aria-labelledby="cart-page-title">
+            <div class="section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Shopping cart</p>
+                        <h2 id="cart-page-title">Your cart</h2>
+                    </div>
+                    <a class="button secondary" href="#/products">Continue shopping</a>
+                </div>
+                <div id="cartPageItems" class="cart-page-items"></div>
+                <div class="cart-page-footer">
+                    <div class="cart-total-row">
+                        <span>Total</span>
+                        <strong id="cartPageTotal">ETB 0</strong>
+                    </div>
+                    <button type="button" class="button primary" id="cartPageCheckout">Checkout</button>
+                    <button type="button" class="button secondary" id="cartPageClear">Clear cart</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- WISHLIST -->
+        <section class="page" data-page="wishlist" aria-labelledby="wishlist-title">
+            <div class="section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Saved for later</p>
+                        <h2 id="wishlist-title">Your wishlist</h2>
+                    </div>
+                    <a class="button secondary" href="#/products">Browse products</a>
+                </div>
+                <div id="wishlistEmpty" class="cart-empty" hidden>No favorites yet. Tap the heart on any product to save it here.</div>
+                <div id="wishlistPageGrid" class="wishlist-grid"></div>
+            </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="page" data-page="profile" aria-labelledby="profile-title">
+            <div class="section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Account</p>
+                        <h2 id="profile-title">My Account</h2>
+                    </div>
+                    <span class="section-pill">Profile</span>
+                </div>
+                <div class="profile-hero">
+                    <div class="profile-avatar" aria-hidden="true">O</div>
+                    <div>
+                        <h3>Guest shopper</h3>
+                        <p>Sign in to sync your cart, wishlist and orders across devices.</p>
+                    </div>
+                </div>
+                <div class="profile-links">
+                    <a href="#/cart">Your cart</a>
+                    <a href="#/wishlist">Your wishlist</a>
+                    <button type="button" disabled title="Coming soon">Order history</button>
+                    <button type="button" disabled title="Coming soon">Payment methods</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CAR RECOMMENDER -->
+        <section class="page" data-page="recommendations" aria-labelledby="recommendations-title">
+            <div class="recommendation-section section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Smart recommendations</p>
+                        <h2 id="recommendations-title">Car Recommendation Engine</h2>
+                    </div>
+                    <div class="section-pill">Powered by your preferences</div>
+                </div>
+                <p>Discover the top trending cars right away, then personalize recommendations based on your budget, fuel, transmission and mileage preferences.</p>
+
+                <div class="recommendation-intro">
+                    <div>
+                        <h3>Trending cars</h3>
+                        <p>These 15 cars are currently popular with buyers and are selected for strong resale value, quality, and availability.</p>
+                    </div>
+                    <button type="button" id="refreshTrendingBtn" class="refresh-btn">Refresh Trending</button>
+                </div>
+
+                <div id="trendingResults" class="product-grid trending-results"></div>
+
+                <div class="recommendation-panel">
+                    <div class="recommendation-form">
+                        <label>
+                            Your Budget (ETB)
+                            <input type="number" id="budgetInput" placeholder="e.g. 800000" min="0">
+                        </label>
+                        <label>
+                            Fuel Type
+                            <select id="fuelInput">
+                                <option value="any">Any</option>
+                                <option value="Petrol">Petrol</option>
+                                <option value="Diesel">Diesel</option>
+                                <option value="CNG">CNG</option>
+                            </select>
+                        </label>
+                        <label>
+                            Transmission
+                            <select id="transmissionInput">
+                                <option value="any">Any</option>
+                                <option value="Manual">Manual</option>
+                                <option value="Automatic">Automatic</option>
+                            </select>
+                        </label>
+                        <label>
+                            Maximum Kilometers Driven
+                            <input type="number" id="kmInput" placeholder="e.g. 80000" min="0">
+                        </label>
+                        <label>
+                            Maximum Car Age (years)
+                            <input type="number" id="ageInput" placeholder="e.g. 8" min="0">
+                        </label>
+                        <button type="button" id="recommendBtn">Find My Best Cars</button>
+                    </div>
+                    <div id="recommendationResults" class="product-grid recommendation-results"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============================================================
+         FOOTER
+         ============================================================ -->
+    <footer class="site-footer">
+        <div class="footer-brand">
+            <a class="brand" href="#/home" data-route="home" aria-label="Obama Store home">
+                <span class="brand-mark" aria-hidden="true">O</span>
+                <span class="brand-text">
+                    <strong>Obama Store</strong>
+                    <small>Everything you need</small>
+                </span>
+            </a>
+            <p>Your trusted online store for electronics, cars and everyday essentials in Addis Ababa — fast delivery, secure payment and smart recommendations.</p>
+            <div class="footer-social" aria-label="Social links">
+                <a href="https://t.me/obama12300" target="_blank" rel="noopener" aria-label="Telegram">Telegram</a>
+                <a href="https://www.facebook.com/obamastore" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a>
+                <a href="mailto:obamaabrahama@gmail.com" aria-label="Email">Email</a>
+            </div>
+        </div>
+        <div>
+            <h4>Shop</h4>
+            <a href="#/products">All products</a>
+            <a href="#/products?category=cars">Cars</a>
+            <a href="#/products?category=electronics">Electronics</a>
+            <a href="#/products?category=mobile">Mobile</a>
+            <a href="#/products?category=wearables">Wearables</a>
+            <a href="#/categories">All categories</a>
+        </div>
+        <div>
+            <h4>Account</h4>
+            <a href="#/cart">Cart</a>
+            <a href="#/wishlist">Wishlist</a>
+            <a href="#/profile">My Account</a>
+            <a href="#/recommendations">Car Recommender</a>
+            <a href="#/contact">Contact us</a>
+        </div>
+        <div>
+            <h4>Help</h4>
+            <a href="#/about">About us</a>
+            <a href="#/contact">Delivery</a>
+            <a href="#/about">Payments</a>
+            <a href="#/about">Returns</a>
+            <a href="#/contact">Feedback</a>
+        </div>
+        <div class="footer-bottom">
+            <p class="footer-copy">© 2026 Obama Store. All rights reserved.</p>
+            <div class="footer-payments" aria-label="Accepted payment methods">
+                <span>Telebirr</span>
+                <span>CBE Pay</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================================================
+         PRODUCT DETAIL MODAL
+         ============================================================ -->
+    <div class="modal" id="productDetailModal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal="true"></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <button class="modal-close" type="button" aria-label="Close product details" data-close-modal="true">×</button>
+            <div class="modal-content">
+                <img id="modalImage" alt="Product preview">
+                <div>
+                    <p class="hero-badge" id="modalCategory">Featured</p>
+                    <h3 id="modalTitle">Product title</h3>
+                    <p id="modalDescription">Product description</p>
+                    <div class="modal-meta">
+                        <span id="modalPrice">Price</span>
+                        <span id="modalTags">Tags</span>
+                    </div>
+                    <div class="product-actions modal-actions">
+                        <button class="add-cart-btn" type="button">Add to cart</button>
+                        <button class="view-details-btn" type="button" data-close-modal="true">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         COMPARE MODAL
+         ============================================================ -->
+    <div class="modal" id="compareModal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal="true"></div>
+        <div class="modal-dialog compare-modal" role="dialog" aria-modal="true" aria-labelledby="compareTitle">
+            <button class="modal-close" type="button" aria-label="Close compare view" data-close-modal="true">×</button>
+            <div class="modal-content">
+                <h3 id="compareTitle">Compare products</h3>
+                <div id="compareModalBody" class="compare-modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         CART QUICK-VIEW DRAWER
+         ============================================================ -->
+    <div class="cart-backdrop" id="cartBackdrop" hidden></div>
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true" aria-label="Shopping cart">
+        <div class="cart-drawer-header">
+            <div>
+                <p class="hero-badge">Your cart</p>
+                <h3>Ready to checkout</h3>
+            </div>
+            <button type="button" class="icon-button" id="closeCartBtn" aria-label="Close cart">✕</button>
+        </div>
+        <div id="cartItems" class="cart-items"></div>
+        <div class="cart-drawer-footer">
+            <div class="cart-total-row">
+                <span>Total</span>
+                <strong id="cartTotalValue">ETB 0</strong>
+            </div>
+            <a class="button secondary" href="#/cart">Go to cart page</a>
+            <button type="button" class="button primary" id="checkoutBtn">Checkout</button>
+            <button type="button" class="button secondary" id="clearCartBtn">Clear cart</button>
+        </div>
+    </aside>
+
+    <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" defer></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" defer></script>
+    <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js" defer></script>
+    <script src="https://unpkg.com/framer-motion@11.11.17/dist/framer-motion.js" defer></script>
+    <script src="js/motion.js" defer></script>
+    <script src="js/router.js" defer></script>
+    <script src="js/store.js" defer></script>
+    <script src="js/catalog.js" defer></script>
+    <script src="js/recommend.js" defer></script>
+    <script src="js/home.js" defer></script>
+    <script src="js/product.js" defer></script>
+</body>
+</html>

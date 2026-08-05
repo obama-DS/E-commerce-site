@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+.venv-*/
+*.log
+car_price_model.pkl
+.DS_Store

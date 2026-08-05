@@ -1,0 +1,360 @@
+/* ---------- Recommendation sections ---------- */
+
+.rec-section {
+  padding: 26px;
+  margin: 0;
+}
+
+.rec-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.rec-heading-text .eyebrow {
+  margin-bottom: 6px;
+}
+
+.rec-heading h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  letter-spacing: -0.01em;
+}
+
+.rec-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.rec-arrow {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.rec-arrow:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.rec-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  padding-bottom: 8px;
+  margin-bottom: -8px;
+}
+
+.rec-row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.rec-row::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.rec-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.rec-row .rec-card {
+  flex: 0 0 clamp(210px, 22vw, 260px);
+  scroll-snap-align: start;
+}
+
+.rec-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.rec-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
+.rec-card-img {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.rec-card-img:hover img {
+  filter: brightness(0.96);
+}
+
+.rec-card-img img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 16px;
+  background: var(--surface-muted);
+}
+
+.rec-card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  backdrop-filter: blur(6px);
+}
+
+.rec-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.rec-card-cat {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rec-card-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rec-card-title:hover {
+  color: var(--primary);
+}
+
+.rec-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #f59e0b;
+  font-size: 0.82rem;
+}
+
+.rec-stars-count {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.rec-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.rec-card-price {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rec-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rec-card-cart {
+  padding: 7px 12px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.rec-card-cart:hover {
+  background: var(--primary-strong);
+  transform: translateY(-1px);
+}
+
+.rec-card-fav {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.rec-card-fav:hover {
+  transform: scale(1.08);
+}
+
+.rec-card-fav.is-active {
+  background: #fdf2f8;
+  color: #be185d;
+  border-color: #f9a8d4;
+}
+
+body[data-theme="dark"] .rec-card-fav {
+  background: rgba(17, 28, 50, 0.9);
+}
+
+.rec-card-reason {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.rec-card-value {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+body[data-theme="dark"] .rec-card-value {
+  background: rgba(4, 120, 87, 0.18);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #6ee7b7;
+}
+
+/* ---------- Skeleton ---------- */
+
+.rec-skeleton-block {
+  background: var(--surface-strong);
+  border-radius: 8px;
+  animation: rec-pulse 1.4s ease-in-out infinite;
+}
+
+.rec-skeleton-card {
+  height: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  animation: rec-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* ---------- Error / empty ---------- */
+
+.rec-error,
+.rec-empty {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 26px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+}
+
+.rec-error > span {
+  font-size: 1.5rem;
+}
+
+.rec-error strong,
+.rec-empty h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.rec-error p,
+.rec-empty p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.rec-error .button,
+.rec-empty .button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.rec-empty-icon {
+  font-size: 1.7rem;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .rec-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rec-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rec-row .rec-card {
+    flex-basis: 200px;
+  }
+
+  .rec-error,
+  .rec-empty {
+    flex-wrap: wrap;
+  }
+
+  .rec-error .button,
+  .rec-empty .button {
+    margin-left: 0;
+  }
+}
