@@ -24,6 +24,7 @@ bad JSON) answer() returns None and app.py falls back to the rule engine.
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 
@@ -646,7 +647,10 @@ def answer(message, session, client_history):
 
     collected_cards = []
     reply = ''
-    for _round in range(5):
+    deadline = time.monotonic() + float(os.environ.get('LLM_MAX_SECONDS', '60'))
+    for _round in range(3):
+        if time.monotonic() > deadline:
+            break
         try:
             response = _chat_completion(messages, tools=TOOLS)
         except Exception:
