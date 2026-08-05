@@ -7,8 +7,9 @@
  * htm renderer factory that maps literal tags like <motion.div>,
  * <animatepresence> and <motionconfig> to their Framer Motion components.
  *
- * If the CDN fails to load, MotionHtm falls back to a plain htm renderer and
- * strips Framer-specific props so pages still render (just without motion).
+ * If the CDN fails to load, MotionHtm falls back to a plain htm renderer that
+ * normalizes motion tags back to their DOM tag and strips Framer-specific
+ * props, so pages still render (just without motion).
  */
 (function () {
   'use strict';
@@ -41,7 +42,7 @@
   };
 
   function stripFramerProps(props) {
-    if (!props) return props || {};
+    if (!props) return {};
     var out = {};
     for (var key in props) {
       if (Object.prototype.hasOwnProperty.call(props, key) && !FRAMER_PROPS[key]) {
@@ -53,10 +54,23 @@
 
   window.MotionHtm = function MotionHtm(createElement) {
     var Motion = window.Motion;
+    var Fragment = createElement.Fragment;
     var plain = htm.bind(createElement);
 
     if (!Motion || !Motion.motion) {
-      return plain;
+      return htm.bind(function (type, props) {
+        var children = Array.prototype.slice.call(arguments, 2);
+        if (typeof type === 'string') {
+          if (type.indexOf('motion.') === 0) {
+            return createElement(type.slice(7), stripFramerProps(props), children.length ? children : null);
+          }
+          if (type === 'animatepresence' || type === 'motionconfig') {
+            return createElement(Fragment, { key: props && props.key }, children.length ? children : null);
+          }
+          return createElement(type, stripFramerProps(props), children.length ? children : null);
+        }
+        return createElement(type, props, children.length ? children : null);
+      });
     }
 
     return htm.bind(function (type, props) {

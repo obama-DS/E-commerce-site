@@ -84,6 +84,11 @@
       const active = section.dataset.page === name;
       section.hidden = !active;
       section.classList.toggle('is-active-page', active);
+      section.classList.remove('page-enter');
+      if (active) {
+        void section.offsetWidth;
+        section.classList.add('page-enter');
+      }
     });
 
     document.querySelectorAll('[data-route]').forEach((link) => {

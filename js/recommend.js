@@ -389,7 +389,7 @@
   if (window.React && window.ReactDOM && window.htm) {
     var React2 = window.React;
     var htm = window.htm;
-    var html = htm.bind(React2.createElement);
+      var html = (window.MotionHtm || htm.bind)(React2.createElement);
     var useState = React2.useState;
     var useEffect = React2.useEffect;
     var useRef = React2.useRef;
@@ -443,7 +443,12 @@
         }
       };
       return html`
-        <article className="rec-card">
+        <motion.article
+          className="rec-card"
+          variants=${{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } } }}
+          whileHover=${{ y: -4 }}
+          transition=${{ type: 'spring', stiffness: 320, damping: 26 }}
+        >
           <button type="button" className="rec-card-img" onClick=${() => (onOpen || openProduct)(product.id)} aria-label=${'View ' + product.title}>
             <img src=${product.imageUrl} alt=${product.title} loading="lazy" decoding="async" onError=${onImgError} />
             ${product.badge ? html`<span className="rec-card-badge">${product.badge}</span>` : null}
@@ -475,7 +480,7 @@
             </div>
             ${showReason && product.reason ? html`<span className="rec-card-reason">${product.reason}</span>` : null}
           </div>
-        </article>
+        </motion.article>
       `;
     };
 
@@ -489,7 +494,14 @@
       var isGrid = variant === 'grid';
 
       return html`
-        <section className="rec-section" aria-labelledby=${slotId}>
+        <motion.section
+          className="rec-section"
+          aria-labelledby=${slotId}
+          initial=${{ opacity: 0, y: 24 }}
+          whileInView=${{ opacity: 1, y: 0 }}
+          viewport=${{ once: true, amount: 0.1 }}
+          transition=${{ duration: 0.5, ease: 'easeOut' }}
+        >
           <div className="rec-heading">
             <div className="rec-heading-text">
               ${reason ? html`<p className="eyebrow">${reason}</p>` : null}
@@ -502,12 +514,19 @@
               </div>
             `}
           </div>
-          <div className=${isGrid ? 'rec-grid' : 'rec-row'} ref=${ref}>
+          <motion.div
+            className=${isGrid ? 'rec-grid' : 'rec-row'}
+            ref=${ref}
+            variants=${{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+            initial="hidden"
+            whileInView="show"
+            viewport=${{ once: true, amount: 0.1 }}
+          >
             ${products.map(function (p) {
               return html`<${RecCard} key=${p.recommendKey || p.id} product=${p} onOpen=${onOpen} showReason=${showReason} />`;
             })}
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
       `;
     };
 

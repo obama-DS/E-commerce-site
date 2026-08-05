@@ -1,0 +1,117 @@
+/* ==================================================================
+   Motion layer — page transitions, scroll-reveal, hover micro-actions
+   Complements the Framer Motion (CDN) animations used in the React
+   views (home.js, product.js, recommend.js). These rules cover the
+   vanilla-rendered grids and the hash-router page switches.
+   ================================================================== */
+
+/* ---- Page transitions (router.js) -------------------------------- */
+[data-page].page-enter {
+  animation: pageRiseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pageRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Scroll-reveal for vanilla grids (store.js observeRevealCards) - */
+.product-card.is-revealed,
+.wishlist-card.is-revealed {
+  animation: gridCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--reveal-index, 0) * 45ms);
+}
+
+@keyframes gridCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Hover micro-interactions ------------------------------------- */
+/* Product cards: lift + image zoom */
+.product-card {
+  will-change: transform;
+}
+
+.product-card img {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+}
+
+.product-card:hover img {
+  transform: scale(1.05);
+}
+
+/* Recommendation cards: image zoom (lift handled by Framer whileHover) */
+.rec-card-img img {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+}
+
+.rec-card:hover .rec-card-img img {
+  transform: scale(1.06);
+}
+
+/* Wishlist cards: image zoom */
+.wishlist-card {
+  overflow: hidden;
+}
+
+.wishlist-card img {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wishlist-card:hover img {
+  transform: scale(1.05);
+}
+
+/* Buttons / arrows already use CSS transitions; add a subtle press */
+.rec-arrow,
+.pdp-arrow,
+.pdp-zoom-btn,
+.pdp-zoom-reset,
+button.button {
+  transition: transform 0.18s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rec-arrow:active,
+.pdp-arrow:active,
+.pdp-zoom-btn:active,
+.pdp-zoom-reset:active,
+button.button:active {
+  transform: scale(0.96);
+}
+
+/* ---- Respect reduced-motion ---------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  [data-page].page-enter,
+  .product-card.is-revealed,
+  .wishlist-card.is-revealed {
+    animation: none;
+  }
+
+  .product-card img,
+  .rec-card-img img,
+  .wishlist-card img {
+    transition: none;
+    transform: none;
+  }
+
+  .rec-arrow:active,
+  .pdp-arrow:active,
+  .pdp-zoom-btn:active,
+  .pdp-zoom-reset:active,
+  button.button:active {
+    transform: none;
+  }
+}

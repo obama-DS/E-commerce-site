@@ -971,6 +971,7 @@ function renderWishlistPage() {
   });
 
   updateWishlistCount();
+  observeRevealCards(grid);
 }
 
 function renderCompareSummary() {
@@ -1315,6 +1316,7 @@ function loadMarketplaceProducts() {
       createMarketplaceCard(product.title, product.imageUrl, product.price, product.description, product.tags, product.source, product.link)
     );
   });
+  observeRevealCards(marketplaceGrid);
 }
 
 function clearMarketplaceProducts() {
@@ -1353,6 +1355,25 @@ function initStaticProductCards() {
   scope.querySelectorAll('.product-card').forEach(card => attachProductActions(card));
 }
 
+function observeRevealCards(scope) {
+  const root = scope || document;
+  const cards = Array.from(root.querySelectorAll('.product-card:not(.recommendation-card):not(.is-revealed), .wishlist-card:not(.is-revealed)'));
+  if (!cards.length) return;
+  if (!window.RevealObserver) {
+    window.RevealObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-revealed');
+        window.RevealObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+  }
+  cards.forEach((card, i) => {
+    card.style.setProperty('--reveal-index', i % 8);
+    window.RevealObserver.observe(card);
+  });
+}
+
 function renderCatalogGrid() {
   const grid = document.getElementById('productGrid');
   if (!grid || !window.ObamaCatalog) return;
@@ -1360,6 +1381,7 @@ function renderCatalogGrid() {
   if (!products || !products.length) return;
   grid.innerHTML = products.map(catalogCardHtml).join('');
   grid.querySelectorAll('.product-card').forEach(card => attachProductActions(card));
+  observeRevealCards(grid);
 }
 
 function catalogCardHtml(p) {

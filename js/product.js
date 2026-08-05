@@ -150,7 +150,17 @@
           onMouseEnter=${event => { setHovering(true); positionZoom(event); }}
           onMouseLeave=${() => setHovering(false)}
         >
-          <img src=${images[index]} alt=${product.alt} onError=${fallback} onClick=${onOpenFullscreen} loading="eager" />
+          <motion.img
+            key=${index}
+            src=${images[index]}
+            alt=${product.alt}
+            onError=${fallback}
+            onClick=${onOpenFullscreen}
+            loading="eager"
+            initial=${{ opacity: 0 }}
+            animate=${{ opacity: 1 }}
+            transition=${{ duration: 0.28, ease: 'easeOut' }}
+          />
           ${product.badge ? html`<span className="pdp-badge">${product.badge}</span>` : null}
           ${count > 1 ? html`
             <button type="button" className="pdp-arrow prev" onClick=${prev} aria-label="Previous image">‹</button>
@@ -264,7 +274,7 @@
           <button type="button" className="pdp-zoom-btn" onClick=${() => setModalZoom(z => Math.min(2, Math.round((z + 0.5) * 10) / 10))} disabled=${modalZoom >= 2} aria-label="Zoom in">+</button>
           <button type="button" className="pdp-zoom-reset" onClick=${() => setModalZoom(1)} disabled=${!zoomed}>Reset</button>
         </div>
-      </div>
+      </motion.div>
     `;
   }
 
@@ -867,9 +877,9 @@
         <${RecentlyViewed} onOpen=${onOpen} />
         <${FaqSection} product=${product} />
 
-        <motion.animatepresence>
+        <animatepresence>
           ${fullscreen ? html`<${FullscreenModal} key="pdp-fullscreen" images=${product.images} index=${imageIndex} onIndex=${setImageIndex} onClose=${() => setFullscreen(false)} />` : null}
-        </motion.animatepresence>
+        </animatepresence>
 
         ${toast ? html`<div className="pdp-toast" role="status" aria-live="polite"><span aria-hidden="true">✓</span>${toast}</div>` : null}
       </motion.div>
@@ -903,7 +913,11 @@
 
     if (state.loading) return html`<${ProductSkeleton} />`;
     if (!state.product) return html`<${NotFound} />`;
-    return html`<${ProductPage} product=${state.product} />`;
+    return html`
+      <motionconfig reducedMotion="user">
+        <${ProductPage} product=${state.product} />
+      </motionconfig>
+    `;
   }
 
   /* ==================================================================
