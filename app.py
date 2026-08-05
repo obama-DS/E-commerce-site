@@ -1013,6 +1013,12 @@ def _hit_card(hit: dict) -> dict:
     return _car_card(hit)
 
 
+def _open_product_action(hits: List[dict]):
+    if len(hits) == 1 and hits[0].get('priceValue') is not None and hits[0].get('id'):
+        return {'type': 'open_product', 'productId': hits[0]['id']}
+    return None
+
+
 _CATEGORY_ALIASES = {
     'phone': 'Mobile', 'phones': 'Mobile', 'smartphone': 'Mobile', 'smartphones': 'Mobile',
     'laptop': 'Electronics', 'laptops': 'Electronics', 'computer': 'Electronics',
@@ -1746,6 +1752,7 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
             f"I found these matches for \"{query}\":",
             [_hit_card(h) for h in hits],
             ['Recommend a car', "What's trending?"],
+            action=_open_product_action(hits),
         )
 
     return _text_reply(

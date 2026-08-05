@@ -276,10 +276,7 @@
         saveHistory();
         renderFlow(data.flow || null);
         renderSuggestions(data.suggestions || []);
-        if (data.action && data.action.type === 'add_to_cart' &&
-            window.StoreHelpers && window.StoreHelpers.addItemToCart) {
-          window.StoreHelpers.addItemToCart(data.action.title, data.action.priceText);
-        }
+        handleAction(data.action || null);
       })
       .catch(function () {
         hideTyping(typing);
