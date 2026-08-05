@@ -1728,6 +1728,7 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
             f"I found these matches for \"{query}\":",
             [_hit_card(h) for h in hits],
             ['Recommend a car', "What's trending?"],
+            action=_open_product_action(hits),
         )
 
     if _has(text, ('help', 'assist')):
