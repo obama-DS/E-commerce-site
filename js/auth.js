@@ -150,6 +150,11 @@
         if (openBtn) openBtn.addEventListener('click', function () { openModal('login'); });
       }
     }
+
+    var kbLink = document.getElementById('kbAdminLink');
+    if (kbLink) {
+      kbLink.hidden = !(signedIn && user.is_admin);
+    }
   }
 
   /* ---- Modal ------------------------------------------------------- */

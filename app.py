@@ -11,7 +11,7 @@ import time
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Request, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sklearn.compose import ColumnTransformer
@@ -20,6 +20,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from recommend_engine import PRODUCTS, RecommendationEngine
+from knowledge import KnowledgeBase
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "CAR.csv"
@@ -98,6 +99,7 @@ class UserStore:
             "email": (email or "").strip().lower(),
             "password_hash": _hash_password(password, salt),
             "salt": salt.hex(),
+            "is_admin": False,
             "created_at": int(time.time()),
         }
         self.users.append(user)
@@ -136,11 +138,40 @@ def _public_user(user: dict) -> dict:
         "id": user["id"],
         "name": user["name"],
         "email": user["email"],
+        "is_admin": bool(user.get("is_admin")),
         "created_at": user["created_at"],
     }
 
 
 user_store = UserStore()
+
+kb = KnowledgeBase()
+
+
+def _ensure_admin() -> None:
+    """Create/promote an admin account (env vars override, else a local default)."""
+    if any(u.get("is_admin") for u in user_store.users):
+        return
+    email = os.environ.get("ADMIN_EMAIL", "admin@obamastore.com").strip().lower()
+    password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    existing = user_store._find_by_email(email)
+    if existing:
+        existing["is_admin"] = True
+        user_store._save()
+        return
+    user, _ = user_store.create_user("Store Admin", email, password)
+    user["is_admin"] = True
+    user_store._save()
+
+
+def _require_admin(request: Request) -> dict:
+    token = _bearer_token(request.headers.get("authorization"))
+    user = user_store.user_by_token(token) if token else None
+    if not user:
+        raise HTTPException(status_code=401, detail="Sign in to access the Knowledge Base.")
+    if not user.get("is_admin"):
+        raise HTTPException(status_code=403, detail="Admin access required.")
+    return user
 
 
 class RegisterRequest(BaseModel):
@@ -373,8 +404,7 @@ def build_car_record(row: pd.Series, predicted_price: float) -> dict:
         'popularity': float(round(predicted_price / max(car_age, 1), 1)),
         'tags': tags
     }
-
-
+#hey
 def build_recommendation_score(car: dict, budget: float, fuel: str, transmission: str, km: Optional[int], age: Optional[int]) -> float:
     score = 0.0
     if budget and budget > 0:
@@ -470,6 +500,8 @@ async def startup_event() -> None:
     car_catalog = build_car_catalog(model)
     car_values = build_car_value_scores(model)
     rec_engine = RecommendationEngine(PRODUCTS, car_values=car_values)
+    kb._init_db()
+    _ensure_admin()
 
 
 @app.get('/api/trending-cars')
@@ -597,6 +629,166 @@ async def recommendation_health() -> dict:
 # ------------------------------------------------------------------
 
 CHAT_BACKEND = os.environ.get('CHAT_BACKEND', 'rules')
+
+# ------------------------------------------------------------------
+# Knowledge Base — admin API. Every endpoint requires an admin token.
+# ------------------------------------------------------------------
+
+class KBItemRequest(BaseModel):
+    title: str
+    content: str
+    category: str = "General"
+    tags: List[str] = []
+    content_type: str = "text"
+    source: str = ""
+
+
+class KBUrlRequest(BaseModel):
+    url: str
+    title: str = ""
+    category: str = "General"
+    tags: List[str] = []
+
+
+class KBTestRequest(BaseModel):
+    message: str
+
+
+def _kb_tags(raw: str) -> List[str]:
+    return [t.strip() for t in (raw or "").split(",") if t.strip()]
+
+
+@app.get('/api/kb/stats')
+async def kb_stats(request: Request) -> dict:
+    _require_admin(request)
+    return kb.stats()
+
+
+@app.get('/api/kb/meta')
+async def kb_meta(request: Request) -> dict:
+    _require_admin(request)
+    return {
+        'categories': kb.categories(),
+        'tags': kb.tags(),
+        'stats': kb.stats(),
+    }
+
+
+@app.get('/api/kb/items')
+async def kb_list(request: Request, q: str = "", category: str = "",
+                  tag: str = "", status: str = "", page: int = 1,
+                  page_size: int = 20) -> dict:
+    _require_admin(request)
+    return kb.list(
+        q=q.strip() or None,
+        category=category.strip() or None,
+        tag=tag.strip() or None,
+        status=status.strip() or None,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@app.get('/api/kb/items/{item_id}')
+async def kb_get(request: Request, item_id: str) -> dict:
+    _require_admin(request)
+    item = kb.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Knowledge item not found.")
+    return item
+
+
+@app.post('/api/kb/items')
+async def kb_create(request: Request, req: KBItemRequest) -> dict:
+    _require_admin(request)
+    try:
+        return kb.create(
+            title=req.title,
+            content=req.content,
+            category=req.category,
+            tags=req.tags,
+            content_type=req.content_type or 'text',
+            source=req.source,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.put('/api/kb/items/{item_id}')
+async def kb_update(request: Request, item_id: str, req: KBItemRequest) -> dict:
+    _require_admin(request)
+    try:
+        return kb.update(
+            item_id,
+            title=req.title,
+            content=req.content,
+            category=req.category,
+            tags=req.tags,
+            content_type=req.content_type or 'text',
+            source=req.source,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@app.delete('/api/kb/items/{item_id}')
+async def kb_delete(request: Request, item_id: str) -> dict:
+    _require_admin(request)
+    item = kb.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Knowledge item not found.")
+    kb.delete(item_id)
+    return {'ok': True}
+
+
+@app.post('/api/kb/items/{item_id}/reindex')
+async def kb_reindex(request: Request, item_id: str) -> dict:
+    _require_admin(request)
+    item = kb.get(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Knowledge item not found.")
+    kb.index_item(item_id)
+    return kb.get(item_id)
+
+
+@app.post('/api/kb/upload')
+async def kb_upload(request: Request, file: UploadFile = File(...),
+                    title: str = Form(''), category: str = Form('General'),
+                    tags: str = Form('')) -> dict:
+    _require_admin(request)
+    filename = file.filename or 'upload.bin'
+    data = await file.read()
+    try:
+        return kb.import_file(
+            filename=filename,
+            data=data,
+            category=category or 'General',
+            tags=_kb_tags(tags),
+            title=title,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.post('/api/kb/url')
+async def kb_url(request: Request, req: KBUrlRequest) -> dict:
+    _require_admin(request)
+    try:
+        return kb.import_url(
+            url=req.url,
+            category=req.category or 'General',
+            tags=req.tags,
+            title=req.title,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.post('/api/kb/test')
+async def kb_test(request: Request, req: KBTestRequest) -> dict:
+    _require_admin(request)
+    return kb.test(req.message or '', limit=6)
+
 
 STORE_CONTACT = {
     'phones': '+251 963 126 602, +251 799 494 063',
@@ -1115,6 +1307,41 @@ def _llm_reply(message: str, session: dict, history: List[dict]):
     return None
 
 
+def _kb_reply(message: str, session: dict, history: List[dict]):
+    """Answer from uploaded knowledge BEFORE falling back to rule intents.
+
+    Returns None when the knowledge base has no confident match, so the
+    caller falls through to the deterministic intents / catalog lookup.
+    """
+    if not message.strip():
+        return None
+    threshold = float(os.environ.get('KB_MIN_SCORE', '1.6'))
+    results = kb.search(message, limit=4)
+    if not results:
+        return None
+    top = results[0]
+    if top.get('score', 0) < threshold:
+        return None
+    title = (top.get('title') or '').strip()
+    body = (top.get('content') or '').strip()
+    if not body:
+        return None
+    if len(body) > 700:
+        body = body[:700].rstrip() + '…'
+    header = f"📚 **{title}**" if title else "📚 From your knowledge base:"
+    import datetime as _dt
+    updated = ''
+    if top.get('updated_at'):
+        updated = ' · updated ' + _dt.datetime.fromtimestamp(
+            top['updated_at']).strftime('%Y-%m-%d')
+    source = top.get('source')
+    attribution = f"\n\n— source: {source}{updated}" if (source or updated) else ''
+    return _text_reply(
+        header + "\n\n" + body + attribution,
+        ['What can you do?', 'Recommend a car', 'Contact us'],
+    )
+
+
 def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
     if CHAT_BACKEND == 'llm':
         llm_result = _llm_reply(message, session, history)
@@ -1128,6 +1355,12 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
         flow_result = _handle_car_flow(message, session)
         if flow_result is not None:
             return flow_result
+
+    # Knowledge Base first: answer from the latest uploaded knowledge before
+    # any rule-based (general) knowledge.
+    kb_result = _kb_reply(message, session, history)
+    if kb_result is not None:
+        return kb_result
 
     # ---- intents -----------------------------------------------------
 

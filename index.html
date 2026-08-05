@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="css/motion.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="css/kb.css">
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -422,7 +423,7 @@
                     </fieldset>
                     <label>
                         Your name
-                        <input type="text" name="payment_name" required>
+                        <input type="text" name="payment_name " required>
                     </label>
                     <label>
                         Phone or account number
@@ -434,7 +435,7 @@
                     </label>
                     <button type="submit">Submit Payment</button>
                 </form>
-                <p class="payment-note">Send your payment via Telebirr or CBE Pay and keep the reference code for confirmation.</p>
+                <p class="payment-note">Send your payment via Telebirr or M Pay and keep the reference code for confirmation.</p>
             </div>
         </section>
 
@@ -561,6 +562,7 @@
                     <a href="#/wishlist">Your wishlist</a>
                     <button type="button" disabled title="Coming soon">Order history</button>
                     <button type="button" disabled title="Coming soon">Payment methods</button>
+                    <a href="#/kb" id="kbAdminLink" hidden>Admin · Knowledge Base</a>
                 </div>
             </div>
         </section>
@@ -790,6 +792,26 @@
     </div>
 
     <!-- ============================================================
+         KNOWLEDGE BASE (admin panel)
+         ============================================================ -->
+    <section class="page" data-page="kb" aria-labelledby="kb-title">
+        <div class="kb-shell section-card">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Admin</p>
+                    <h2 id="kb-title">Knowledge Base</h2>
+                </div>
+                <span class="section-pill" id="kbStatusPill">Connecting…</span>
+            </div>
+            <p class="kb-intro">Teach the assistant facts, policies and answers — from text, files
+                (PDF / Word / Markdown / CSV / JSON) or website URLs. New knowledge is indexed instantly
+                and the chatbot uses it on its very next message.</p>
+            <div id="kbRoot"></div>
+        </div>
+    </section>
+    <div id="kbModalHost" hidden></div>
+
+    <!-- ============================================================
          CHAT ASSISTANT
          ============================================================ -->
     <button type="button" class="chat-launcher" id="chatLauncher" aria-label="Open chat assistant" aria-expanded="false">
@@ -824,8 +846,9 @@
     <script src="js/motion.js" defer></script>
     <script src="js/router.js" defer></script>
     <script src="js/store.js" defer></script>
-    <script src="js/auth.js" defer></script>
-    <script src="js/chat.js" defer></script>
+<script src="js/auth.js" defer></script>
+<script src="js/kb.js" defer></script>
+<script src="js/chat.js" defer></script>
     <script src="js/catalog.js" defer></script>
     <script src="js/recommend.js" defer></script>
     <script src="js/home.js" defer></script>
