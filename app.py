@@ -1468,7 +1468,8 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
     fuel = _extract_fuel(text)
     transmission = _extract_transmission(text)
     wants_car = _has(text, ('car', 'suv', 'sedan', 'pickup', 'vehicle', 'hatchback')) and (
-        _has(text, ('recommend', 'budget', 'under', 'afford', 'cheap', 'suggest', 'which', 'within'))
+        _has(text, ('recommend', 'budget', 'under', 'afford', 'cheap', 'suggest', 'which', 'within',
+                    'buy', 'purchase', 'order', 'want', 'get'))
         or budget is not None
     )
     car_refine = budget is not None or fuel != 'any' or transmission != 'any'
