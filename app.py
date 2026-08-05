@@ -628,15 +628,15 @@ async def recommendation_health() -> dict:
 # ------------------------------------------------------------------
 # Chat assistant — "Obama", the store's AI assistant.
 #
-# Phase 1 (active): a deterministic intent engine. Every reply is built
-# from the store's own data (PRODUCTS, car_catalog, FAQs, contact info),
-# so it never hangs, needs no external key, and never errors out — any
-# input gets a helpful answer.
-# Phase 2 (ready): set CHAT_BACKEND=llm and implement _llm_reply() to
-# delegate to an LLM adapter. The /api/chat contract stays identical.
+# Hybrid brain: the modular assistant (assistant.py) is the default when
+# an OPENAI_API_KEY is configured — it answers general questions with the
+# LLM, uses RAG + tools for store data, and keeps per-session memory.
+# Any failure (no key, timeout, error) falls back to the deterministic
+# intent engine below, which always runs offline with the store's own
+# data (PRODUCTS, car_catalog, FAQs, contact info).
 # ------------------------------------------------------------------
 
-CHAT_BACKEND = os.environ.get('CHAT_BACKEND', 'rules')
+CHAT_BACKEND = os.environ.get('CHAT_BACKEND', 'llm')
 
 # ------------------------------------------------------------------
 # Knowledge Base — admin API. Every endpoint requires an admin token.
