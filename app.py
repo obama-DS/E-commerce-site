@@ -1707,7 +1707,7 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
 
     query = _extract_query(message) or _extract_product_like(text)
     if _has(text, ('have you', 'do you have', 'search', 'find', 'looking for', 'product', 'sell',
-                   'in stock', 'price of', 'cost of', 'how much is', 'i want', 'i need', 'show', 'price')):
+                   'in stock', 'price of', 'cost of', 'how much is', 'i want', 'i need', 'show', 'view', 'price')):
         if not query:
             return _text_reply(
                 "Sure — tell me the product name, like \"do you have a MacBook?\" or \"iPhone 15\".",
