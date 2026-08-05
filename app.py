@@ -1037,7 +1037,7 @@ def _extract_product_like(text: str) -> str:
     cleaned = text.lower().strip()
     for prefix in (
         'do you have', 'is there any', 'is the', 'is a', 'are the', 'are there any',
-        'do you sell', 'can i get', 'show me', 'i want a', 'i need a', 'i want',
+        'do you sell', 'can i get', 'show me', 'view', 'i want a', 'i need a', 'i want',
         'i need', 'looking for', 'search for', 'find me', 'give me', 'price of',
         'cost of', 'how much is', 'is', 'are',
     ):
@@ -1045,6 +1045,18 @@ def _extract_product_like(text: str) -> str:
             cleaned = cleaned[len(prefix):]
             break
     cleaned = cleaned.replace(' in stock', '').replace(' available', '').replace(' stock', '')
+    cleaned = re.sub(r"^(a|an|the)\s+", "", cleaned.strip())
+    return cleaned.strip(" ?!.,:;-")
+
+
+def _strip_buy_verbs(text: str) -> str:
+    cleaned = text.lower().strip()
+    cleaned = re.sub(r"\b(add (it )?to (the )?(cart|basket|bag))\b", " ", cleaned)
+    cleaned = re.sub(r"^(i (want|would like|need|am going|will|wanna)\s+(to\s+)?|i'll )", "", cleaned)
+    cleaned = re.sub(
+        r"^(to\s+)?((buy|purchase|get|order|take|grab|add|pick\s+up)(\s+(me|it)\b)?)\s+",
+        "", cleaned,
+    )
     cleaned = re.sub(r"^(a|an|the)\s+", "", cleaned.strip())
     return cleaned.strip(" ?!.,:;-")
 
