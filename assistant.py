@@ -107,6 +107,30 @@ def enabled() -> bool:
     return bool(_api_key())
 
 
+_STORE_HINTS = (
+    'product', 'price', 'cost', 'buy', 'purchase', 'order', 'cart', 'stock',
+    'car', 'vehicle', 'suv', 'sedan', 'toyota', 'recommend', 'trending',
+    'deliver', 'ship', 'return', 'refund', 'pay', 'payment', 'contact',
+    'phone', 'email', 'warranty', 'discount', 'deal', 'offer', 'policy',
+    'sell', 'store', 'knowledge', 'faq', 'watch', 'iphone', 'macbook',
+    'galaxy', 'sony', 'jbl', 'bravia', 'headphone', 'laptop', 'telebirr',
+    'cbe', 'hours', 'open', 'closed', 'about', 'track', 'help', 'obama',
+    'inventory', 'available', 'spec', 'feature', 'brand', 'model',
+)
+
+
+def _needs_tools(text: str) -> bool:
+    """True when a message looks store-related and may need tool execution.
+
+    General questions are answered by the model alone in a single request
+    (no tool schema, no tool-calling round), which is fast and cheap and
+    protects the per-model daily quota. Store questions get the tool set so
+    the model can pull real product/policy data when retrieval misses.
+    """
+    lower = (text or '').lower()
+    return any(hint in lower for hint in _STORE_HINTS)
+
+
 def _chat_completion(messages, tools=None, attempts=2):
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
     last_error = None
