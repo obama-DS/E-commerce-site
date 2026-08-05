@@ -150,7 +150,17 @@
           onMouseEnter=${event => { setHovering(true); positionZoom(event); }}
           onMouseLeave=${() => setHovering(false)}
         >
-          <img src=${images[index]} alt=${product.alt} onError=${fallback} onClick=${onOpenFullscreen} loading="eager" />
+          <motion.img
+            key=${index}
+            src=${images[index]}
+            alt=${product.alt}
+            onError=${fallback}
+            onClick=${onOpenFullscreen}
+            loading="eager"
+            initial=${{ opacity: 0, scale: 0.985 }}
+            animate=${{ opacity: 1, scale: 1 }}
+            transition=${{ duration: 0.25, ease: 'easeOut' }}
+          />
           ${product.badge ? html`<span className="pdp-badge">${product.badge}</span>` : null}
           ${count > 1 ? html`
             <button type="button" className="pdp-arrow prev" onClick=${prev} aria-label="Previous image">‹</button>
@@ -232,7 +242,12 @@
     };
 
     return html`
-      <div className="pdp-modal" role="dialog" aria-modal="true" aria-label="Fullscreen image preview" onClick=${onClose}>
+      <motion.div className="pdp-modal" role="dialog" aria-modal="true" aria-label="Fullscreen image preview"
+        initial=${{ opacity: 0, scale: 0.94 }}
+        animate=${{ opacity: 1, scale: 1 }}
+        exit=${{ opacity: 0, scale: 0.96 }}
+        transition=${{ duration: 0.22, ease: 'easeOut' }}
+        onClick=${onClose}>
         <div
           ref=${stageRef}
           className="pdp-modal-stage ${zoomed ? 'is-zoomed' : ''}"
@@ -254,7 +269,7 @@
           <button type="button" className="pdp-zoom-btn" onClick=${() => setModalZoom(z => Math.min(2, Math.round((z + 0.5) * 10) / 10))} disabled=${modalZoom >= 2} aria-label="Zoom in">+</button>
           <button type="button" className="pdp-zoom-reset" onClick=${() => setModalZoom(1)} disabled=${!zoomed}>Reset</button>
         </div>
-      </div>
+      </motion.div>
     `;
   }
 
@@ -893,7 +908,11 @@
 
     if (state.loading) return html`<${ProductSkeleton} />`;
     if (!state.product) return html`<${NotFound} />`;
-    return html`<${ProductPage} product=${state.product} />`;
+    return html`
+      <motionconfig reducedMotion="user">
+        <${ProductPage} product=${state.product} />
+      </motionconfig>
+    `;
   }
 
   /* ==================================================================
