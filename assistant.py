@@ -666,6 +666,7 @@ def answer(message, session, client_history):
     if not reply:
         return None
 
+    messages.append({'role': 'assistant', 'content': reply})
     memory = [
         m for m in messages
         if m.get('role') in ('user', 'assistant')
