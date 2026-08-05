@@ -21,7 +21,7 @@
     wishlist: { label: 'Wishlist' },
     profile: { label: 'My Account' },
     recommendations: { label: 'Car Recommender' },
-    kb: { label: 'Knowledge Base' }
+    kb: { label:'Knowledge Base' }
   };
 
   function parseLocation() {
