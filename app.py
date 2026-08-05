@@ -1333,12 +1333,12 @@ def _handle_car_flow(message: str, session: dict):
 
 
 def _llm_reply(message: str, session: dict, history: List[dict]):
-    """Phase 2 hook — swap in an LLM adapter (OpenAI / Gemini / local) here.
+    """Hybrid AI brain — delegates to the modular assistant (assistant.py).
 
-    Return a _response() dict, or None to fall back to the deterministic
-    intent engine. The /api/chat contract must stay identical.
+    Returns a _response()-compatible dict, or None to fall back to the
+    deterministic intent engine (no API key, offline, or any failure).
     """
-    return None
+    return assistant.answer(message, session, history)
 
 
 def _kb_reply(message: str, session: dict, history: List[dict]):
