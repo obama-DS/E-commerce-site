@@ -412,7 +412,8 @@ def build_car_record(row: pd.Series, predicted_price: float) -> dict:
         'popularity': float(round(predicted_price / max(car_age, 1), 1)),
         'tags': tags
     }
-#hey
+
+
 def build_recommendation_score(car: dict, budget: float, fuel: str, transmission: str, km: Optional[int], age: Optional[int]) -> float:
     score = 0.0
     if budget and budget > 0:
