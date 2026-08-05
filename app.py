@@ -648,15 +648,21 @@ def _extract_query(text: str) -> str:
         if index != -1:
             cleaned = cleaned[index + len(prefix):]
             break
-    cleaned = re.sub(r"^(a|an|the)\s+", "", cleaned)
+    cleaned = re.sub(r"^(a|an|the)\s+", "", cleaned.strip())
     return cleaned.strip(" ?!.,:;-")
 
 
 def _recommend_cars(budget: Optional[float], fuel: str, transmission: str) -> List[dict]:
     if not car_catalog:
         return []
+    pool = car_catalog
+    if budget:
+        in_budget = [car for car in pool if car['price'] <= budget]
+        if not in_budget:
+            return [min(pool, key=lambda c: c['price'])]
+        pool = in_budget
     scored = []
-    for car in car_catalog:
+    for car in pool:
         score = build_recommendation_score(car, budget or 0.0, fuel, transmission, None, None)
         scored.append((score, car))
     scored.sort(key=lambda pair: (pair[0], -pair[1]['popularity']), reverse=True)
@@ -752,6 +758,11 @@ def _chat_reply(message: str):
             lines.append(
                 f"{i}. {car['title']} ({car['year']}) — {_fmt_money(car['price'])} · "
                 f"{car['fuel']} · {car['transmission']} · {car['km']:,} km"
+            )
+        if budget and all(car['price'] > budget for car in cars):
+            lines[0] = (
+                f"Nothing in the catalog fits under about {_fmt_money(budget)} right now. "
+                f"The closest match is the {cars[0]['title']} at {_fmt_money(cars[0]['price'])}:"
             )
         lines.append("\nTip: tell me your budget, fuel type or transmission for tighter matches.")
         return "\n".join(lines), ['Under 30,000', 'Diesel automatic', 'Budget 60,000']
