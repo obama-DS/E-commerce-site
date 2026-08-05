@@ -18,7 +18,7 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     current_year = 2026
     df['Car_Age'] = current_year - df['year']
-    df = df.drop(columns=['name', 'year'])
+    df = df.drop(columns =['name', 'year'])
     return df
 
 
