@@ -76,29 +76,44 @@ def enabled() -> bool:
     return bool(_api_key())
 
 
-def _chat_completion(messages, tools=None):
+def _chat_completion(messages, tools=None, attempts=3):
     payload = {
         'model': _model(),
         'messages': messages,
         'temperature': 0.4,
-        'max_tokens': 700,
+        'max_tokens': 1000,
     }
     if tools:
         payload['tools'] = tools
         payload['tool_choice'] = 'auto'
     body = json.dumps(payload).encode('utf-8')
-    request = urllib.request.Request(
-        _base_url() + '/chat/completions',
-        data=body,
-        headers={
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + _api_key(),
-        },
-        method='POST',
-    )
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return json.loads(response.read().decode('utf-8'))
+    last_error = None
+    for attempt in range(attempts):
+        request = urllib.request.Request(
+            _base_url() + '/chat/completions',
+            data=body,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + _api_key(),
+            },
+            method='POST',
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode('utf-8'))
+        except urllib.error.HTTPError as error:
+            last_error = error
+            retryable = error.code in (408, 429) or error.code >= 500
+            if not retryable or attempt == attempts - 1:
+                raise
+            time.sleep(1 + attempt * 2)
+        except (urllib.error.URLError, OSError) as error:
+            last_error = error
+            if attempt == attempts - 1:
+                raise
+            time.sleep(1 + attempt * 2)
+    raise last_error  # pragma: no cover
 
 
 # ---------------------------------------------------------------------------
