@@ -937,7 +937,8 @@ window.StoreHelpers = {
   trackRecentlyViewed,
   getRecentlyViewed,
   addItemToCart,
-  openCart
+  openCart,
+  closeCart
 };
 
 function renderFavoritesPanel() {
