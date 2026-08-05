@@ -232,7 +232,17 @@
     };
 
     return html`
-      <div className="pdp-modal" role="dialog" aria-modal="true" aria-label="Fullscreen image preview" onClick=${onClose}>
+      <motion.div
+        className="pdp-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Fullscreen image preview"
+        initial=${{ opacity: 0, scale: 0.96 }}
+        animate=${{ opacity: 1, scale: 1 }}
+        exit=${{ opacity: 0, scale: 0.96 }}
+        transition=${{ duration: 0.25, ease: 'easeOut' }}
+        onClick=${onClose}
+      >
         <div
           ref=${stageRef}
           className="pdp-modal-stage ${zoomed ? 'is-zoomed' : ''}"
