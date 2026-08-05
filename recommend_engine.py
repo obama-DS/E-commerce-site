@@ -15,7 +15,7 @@ A hybrid, ML-powered recommender used by the product catalogue:
   popularity, sales and recency signals.
 * ML value model            — for cars the existing GradientBoosting price
   model contributes a predicted fair price and a normalized value score.
-
+is this a chage 
 The catalogue is the single source of truth for the recommendation API and is
 kept in sync with js/catalog.js (the client-side data layer).
 """
