@@ -21,11 +21,19 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from recommend_engine import PRODUCTS, RecommendationEngine
 from knowledge import KnowledgeBase
+import assistant
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_FILE = BASE_DIR / "CAR.csv"
 MODEL_FILE = BASE_DIR / "car_price_model.pkl"
 STATIC_DIR = BASE_DIR
+
+# Optional .env file for OPENAI_API_KEY / OPENAI_BASE_URL / OPENAI_MODEL etc.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / ".env")
+except Exception:
+    pass
 
 app = FastAPI(
     title="Obama Store API",

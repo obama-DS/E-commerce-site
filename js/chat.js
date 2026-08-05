@@ -287,6 +287,38 @@
       });
   }
 
+  /* ---- action handling --------------------------------------------- */
+
+  function handleAction(action) {
+    if (!action || !action.type) return;
+    var helpers = window.StoreHelpers;
+    var router = window.AppRouter;
+
+    if (action.type === 'add_to_cart') {
+      if (helpers && helpers.addItemToCart) {
+        helpers.addItemToCart(action.title, action.priceText);
+        if (action.openProduct && action.productId) {
+          if (helpers.closeCart) helpers.closeCart();
+          if (router) router.navigate('product', { id: action.productId });
+          closeChat();
+        }
+      }
+      return;
+    }
+
+    if (action.type === 'open_product' && action.productId) {
+      if (router) router.navigate('product', { id: action.productId });
+      closeChat();
+      return;
+    }
+
+    if (action.type === 'open_products' && action.category) {
+      if (router) router.navigate('products', { category: action.category });
+      closeChat();
+      return;
+    }
+  }
+
   /* ---- card actions ----------------------------------------------- */
 
   function attachCardActions() {
