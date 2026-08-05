@@ -1084,12 +1084,13 @@ def _format_hit(hit: dict) -> str:
 # the endpoint). 'cards' are rich product/car cards the frontend renders
 # inline; 'flow' drives the multi-step pickers.
 
-def _response(reply, suggestions=None, cards=None, flow=None) -> dict:
+def _response(reply, suggestions=None, cards=None, flow=None, action=None) -> dict:
     return {
         'reply': reply,
         'suggestions': suggestions or [],
         'cards': cards or [],
         'flow': flow,
+        'action': action,
     }
 
 
@@ -1097,8 +1098,8 @@ def _text_reply(reply, suggestions=None, flow=None) -> dict:
     return _response(reply, suggestions=suggestions, flow=flow)
 
 
-def _rich_reply(reply, cards, suggestions=None, flow=None) -> dict:
-    return _response(reply, suggestions=suggestions, cards=cards, flow=flow)
+def _rich_reply(reply, cards, suggestions=None, flow=None, action=None) -> dict:
+    return _response(reply, suggestions=suggestions, cards=cards, flow=flow, action=action)
 
 
 # ---- sessions (multi-turn state) ------------------------------------
