@@ -709,6 +709,7 @@ function addItemToCart(title, priceText, quantity = 1) {
     cartEntries.push({ title, priceText, priceValue, quantity: count });
   }
 
+  saveCart();
   updateCartCount(count);
   renderCart();
   openCart();
@@ -723,6 +724,7 @@ function checkoutCart() {
   showOwnerMessage('Checkout complete. Your order is ready for confirmation.', '#065f46');
   cartEntries = [];
   cartTotal = 0;
+  saveCart();
   updateCartCount(0);
   renderCart();
   closeCart();
@@ -731,6 +733,7 @@ function checkoutCart() {
 function clearCart() {
   cartEntries = [];
   cartTotal = 0;
+  saveCart();
   updateCartCount(0);
   renderCart();
   showOwnerMessage('Cart cleared.', 'orange');
@@ -839,6 +842,7 @@ function toggleFavoriteProduct(item) {
   renderFavoritesPanel();
   renderWishlistPage();
   updateWishlistCount();
+  saveFavorites();
   return !(existingIndex >= 0);
 }
 
@@ -871,6 +875,35 @@ function loadRecentlyViewed() {
     recentlyViewed = JSON.parse(localStorage.getItem('obama-store-recent') || '[]');
   } catch (error) {
     recentlyViewed = [];
+  }
+}
+
+function loadPersistedState() {
+  try {
+    cartEntries = JSON.parse(localStorage.getItem('obama-store-cart') || '[]');
+  } catch (error) {
+    cartEntries = [];
+  }
+  try {
+    favoriteProducts = JSON.parse(localStorage.getItem('obama-store-favorites') || '[]');
+  } catch (error) {
+    favoriteProducts = [];
+  }
+}
+
+function saveCart() {
+  try {
+    localStorage.setItem('obama-store-cart', JSON.stringify(cartEntries));
+  } catch (error) {
+    /* storage may be unavailable — ignore */
+  }
+}
+
+function saveFavorites() {
+  try {
+    localStorage.setItem('obama-store-favorites', JSON.stringify(favoriteProducts));
+  } catch (error) {
+    /* storage may be unavailable — ignore */
   }
 }
 
@@ -958,6 +991,7 @@ function renderWishlistPage() {
     button.addEventListener('click', () => {
       const id = button.dataset.wishlistRemove;
       favoriteProducts = favoriteProducts.filter(item => item.id !== id);
+      saveFavorites();
       renderFavoritesPanel();
       renderWishlistPage();
     });
@@ -1135,6 +1169,7 @@ function attachProductActions(card) {
         showOwnerMessage(`Added ${title} to favorites.`, '#8b5cf6');
       }
 
+      saveFavorites();
       renderFavoritesPanel();
       renderWishlistPage();
     });
@@ -1656,6 +1691,9 @@ function initSearch() {
 }
 
 function init() {
+  loadPersistedState();
+  cartTotal = cartEntries.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+  updateCartCount(0);
   initThemeToggle();
   initMenuDrawer();
   renderCatalogGrid();
