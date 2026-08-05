@@ -359,6 +359,13 @@ async function fetchTrendingCars(options = {}) {
   return false;
 }
 
+function animateGridEnter(el) {
+  if (!el) return;
+  el.classList.remove('page-fade-in');
+  void el.offsetWidth;
+  el.classList.add('page-fade-in');
+}
+
 function buildCarCard(car) {
   const normalizedCar = normalizeCarImage({ ...car });
   const card = document.createElement('article');
@@ -509,6 +516,7 @@ function renderRecommendedCars(cars) {
   }
 
   normalizedCars.forEach(car => results.appendChild(buildCarCard(car)));
+  animateGridEnter(results);
 }
 
 function formatPrice(value) {
@@ -954,6 +962,8 @@ function renderWishlistPage() {
     </article>
   `).join('');
 
+  animateGridEnter(grid);
+
   grid.querySelectorAll('[data-wishlist-remove]').forEach(button => {
     button.addEventListener('click', () => {
       const id = button.dataset.wishlistRemove;
@@ -1315,6 +1325,7 @@ function loadMarketplaceProducts() {
       createMarketplaceCard(product.title, product.imageUrl, product.price, product.description, product.tags, product.source, product.link)
     );
   });
+  animateGridEnter(marketplaceGrid);
 }
 
 function clearMarketplaceProducts() {
@@ -1360,6 +1371,7 @@ function renderCatalogGrid() {
   if (!products || !products.length) return;
   grid.innerHTML = products.map(catalogCardHtml).join('');
   grid.querySelectorAll('.product-card').forEach(card => attachProductActions(card));
+  animateGridEnter(grid);
 }
 
 function catalogCardHtml(p) {
