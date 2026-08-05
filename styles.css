@@ -1,0 +1,199 @@
+﻿/* Beginner CSS with color accents */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7fafc;
+  color: #2f435d;
+}
+
+header,
+section,
+footer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header {
+  background: #e8efff;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+header h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+  color: #1f3a93;
+}
+
+header p {
+  margin: 0;
+  color: #4a5d7a;
+}
+
+nav a {
+  margin-right: 12px;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+nav a:hover {
+  text-decoration: underline;
+  color: #1b4ed8;
+}
+
+.hero {
+  background: #ffffff;
+  border: 1px solid #d0e2ff;
+  padding: 16px;
+}
+
+.hero h2 {
+  margin-top: 0;
+  color: #1f3b65;
+}
+
+.hero p {
+  margin: 8px 0 0;
+  color: #4f627c;
+}
+
+.search-section {
+  background: #eef4ff;
+  border: 1px solid #c7d8ff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.search-section label {
+  display: block;
+  margin-bottom: 10px;
+  color: #334155;
+  font-weight: bold;
+}
+
+.search-section input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  margin-top: 8px;
+  background: #ffffff;
+}
+
+.search-section button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+}
+
+.product-card,
+.contact-section,
+.contact-section form,
+.info-section,
+.feedback-section,
+.terms-section,
+.payment-section {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.product-card h3 {
+  margin: 0 0 8px;
+  color: #1f3b65;
+}
+
+.product-card p,
+.contact-section p,
+.payment-section p {
+  margin: 0 0 12px;
+  color: #4f627c;
+}
+
+.payment-section form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.payment-section fieldset {
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.payment-section legend {
+  font-weight: bold;
+  color: #334155;
+}
+
+.payment-section label {
+  display: block;
+  margin-bottom: 10px;
+  color: #334155;
+}
+
+.payment-section input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.payment-section input[type="radio"] {
+  margin-right: 8px;
+}
+
+.payment-section .payment-note {
+  color: #556080;
+  font-size: 0.95rem;
+  margin-top: 8px;
+}
+
+.product-card button {
+  background: #1d4ed8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+.contact-section label,
+.feedback-section label {
+  display: block;
+  margin-bottom: 12px;
+  color: #334155;
+}
+
+.contact-section input,
+.feedback-section input,
+.feedback-section textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  margin-top: 6px;
+  background: #ffffff;
+}
+
+footer {
+  background: #1e293b;
+  color: #f8fafc;
+  text-align: center;
+  border-top: 1px solid #475569;
+}
+
+@media (max-width: 640px) {
+  header,
+  section,
+  footer {
+    padding: 14px;
+  }
+}
