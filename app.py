@@ -1549,6 +1549,45 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
             ['My Account', 'What can you do?'],
         )
 
+    if _has(text, ('buy', 'purchase', 'add to cart', 'add to basket', 'add to bag',
+                   'i want to order', 'order me', 'order one', 'order the', 'order a',
+                   'get me', "i'll take", 'i will take', 'take it', 'get it', 'grab',
+                   'checkout this', 'checkout the', 'ship it to me', 'send it to me')):
+        query = _strip_buy_verbs(message)
+        if not query:
+            query = _extract_product_like(text)
+        if not query:
+            query = _extract_query(message)
+        hits = _search_products(query, limit=3)
+        if hits:
+            top = hits[0]
+            card = _hit_card(top)
+            price_text = card.get('priceText') or ''
+            title = top.get('title', '?')
+            reply = (
+                f"Done! 🛒 I've added **{title}** ({price_text}) to your cart. "
+                f"Tap the card to view it, or open the 🛒 Cart to review and checkout."
+            )
+            return _rich_reply(
+                reply, [card],
+                ['View cart', 'Checkout', 'Recommend a car'],
+                action={'type': 'add_to_cart', 'title': title, 'priceText': price_text},
+            )
+        category = _category_for(text)
+        if category:
+            products = [p for p in PRODUCTS if p.get('category') == category]
+            if products:
+                return _rich_reply(
+                    f"What would you like from **{category}**? Here's what we have:",
+                    [_product_card(p) for p in products[:6]],
+                    ['Show me phones', 'Recommend a car'],
+                )
+        return _text_reply(
+            "What would you like to buy? Tell me the product — e.g. \"buy an iPhone 15\" "
+            "or \"add a MacBook Air to cart\".",
+            ['Show me phones', 'Show me laptops', 'Recommend a car'],
+        )
+
     if _has(text, ('cart', 'wishlist', 'favorite', 'favourite', 'saved items')):
         return _text_reply(
             "Your cart and wishlist are saved automatically and survive a page refresh. Open the 🛒 Cart "
