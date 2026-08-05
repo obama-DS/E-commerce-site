@@ -793,24 +793,27 @@
          CHAT ASSISTANT
          ============================================================ -->
     <button type="button" class="chat-launcher" id="chatLauncher" aria-label="Open chat assistant" aria-expanded="false">
-        <span aria-hidden="true">💬</span>
+        <span class="chat-launcher-icon" aria-hidden="true">🤖</span>
+        <span class="chat-launcher-badge" id="chatLauncherBadge" hidden>1</span>
     </button>
     <div class="chat-widget" id="chatWidget" aria-hidden="true" aria-label="Store assistant chat">
-        <div class="chat-panel">
+        <div class="chat-panel" id="chatPanel">
             <div class="chat-header">
                 <div class="chat-avatar" aria-hidden="true">🤖</div>
                 <div class="chat-header-text">
-                    <strong>Store Assistant</strong>
-                    <span>Online · replies instantly</span>
+                    <strong>Obama — Store Assistant</strong>
+                    <span class="chat-status"><i class="chat-status-dot"></i> Online · replies instantly</span>
                 </div>
                 <button type="button" class="icon-button chat-close" id="chatCloseBtn" aria-label="Close chat">✕</button>
             </div>
             <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+            <div class="chat-flow" id="chatFlow" hidden></div>
             <div class="chat-quick" id="chatQuick"></div>
             <form class="chat-form" id="chatForm" novalidate>
-                <input type="text" id="chatInput" placeholder="Ask about products, cars, delivery…" aria-label="Message the assistant" autocomplete="off">
+                <input type="text" id="chatInput" placeholder="Ask Obama anything…" aria-label="Message the assistant" autocomplete="off">
                 <button type="submit" class="chat-send" id="chatSendBtn" aria-label="Send message">➤</button>
             </form>
+            <div class="chat-footer">Built by Obama Abraham · Powered by the store's own AI</div>
         </div>
     </div>
 

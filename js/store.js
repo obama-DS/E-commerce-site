@@ -935,7 +935,9 @@ window.StoreHelpers = {
   isComparedProduct,
   toggleCompareProduct,
   trackRecentlyViewed,
-  getRecentlyViewed
+  getRecentlyViewed,
+  addItemToCart,
+  openCart
 };
 
 function renderFavoritesPanel() {
