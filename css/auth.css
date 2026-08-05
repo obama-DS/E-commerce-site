@@ -1,0 +1,167 @@
+/* ==================================================================
+   AUTH — sign-in / create-account modal + account profile
+   ================================================================== */
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Navbar auth button ------------------------------------------- */
+
+.auth-btn {
+  font-size: 0.9rem;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+
+.auth-btn.is-authed {
+  background: var(--surface-muted);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* ---- Auth modal ---------------------------------------------------- */
+
+#authBackdrop {
+  position: fixed;
+  z-index: 49;
+}
+
+.auth-modal {
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100% - 48px);
+  overflow-y: auto;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.auth-modal .modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-modal .modal-header h2 {
+  margin: 0;
+}
+
+.auth-modal .eyebrow {
+  margin: 0 0 2px;
+}
+
+/* ---- Tabs ---------------------------------------------------------- */
+
+.auth-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted, var(--text));
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-tab:hover {
+  color: var(--text);
+}
+
+.auth-tab.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(2, 6, 23, 0.12);
+}
+
+/* ---- Forms --------------------------------------------------------- */
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.auth-form .button {
+  justify-content: center;
+  width: 100%;
+}
+
+.auth-form .button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+
+body[data-theme="dark"] .auth-error {
+  color: #fca5a5;
+}
+
+/* ---- Profile actions ----------------------------------------------- */
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.profile-actions .button {
+  padding: 10px 16px;
+}
+
+@media (max-width: 640px) {
+  .auth-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+}

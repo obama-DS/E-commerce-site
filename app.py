@@ -1,10 +1,16 @@
 from pathlib import Path
 from typing import List, Optional
+import hashlib
+import json
+import os
+import re
+import secrets
+import time
 
 import joblib
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sklearn.compose import ColumnTransformer
@@ -23,6 +29,170 @@ app = FastAPI(
     title="Obama Store API",
     description="Backend API for the Obama Store — car recommender powered by a local CSV dataset and ML model, plus the AI product recommendation engine."
 )
+
+# ------------------------------------------------------------------
+# Auth — lightweight token-based accounts with PBKDF2 hashing.
+# User data lives outside the web root (LocalAppData on Windows) so
+# credentials are never exposed by the static file server.
+# ------------------------------------------------------------------
+
+AUTH_DATA_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "ObamaStore"
+AUTH_DATA_DIR.mkdir(parents=True, exist_ok=True)
+USERS_FILE = AUTH_DATA_DIR / "users.json"
+
+
+def _hash_password(password: str, salt: bytes) -> str:
+    return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 120_000).hex()
+
+
+def _new_token() -> str:
+    return secrets.token_hex(24)
+
+
+def _bearer_token(authorization: Optional[str]) -> Optional[str]:
+    if not authorization:
+        return None
+    parts = authorization.split(" ", 1)
+    if len(parts) == 2 and parts[0].lower() == "bearer":
+        return parts[1].strip()
+    return None
+
+
+class UserStore:
+    def __init__(self) -> None:
+        self.path = USERS_FILE
+        self.users: List[dict] = []
+        self.tokens: dict = {}
+        self._load()
+
+    def _load(self) -> None:
+        if self.path.exists():
+            try:
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                self.users = data.get("users", [])
+                self.tokens = data.get("tokens", {})
+            except Exception:
+                self.users = []
+                self.tokens = {}
+        self.tokens = {t: uid for t, uid in self.tokens.items() if self._find_user(uid) is not None}
+
+    def _save(self) -> None:
+        payload = {"users": self.users, "tokens": self.tokens}
+        self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def _find_user(self, uid: str) -> Optional[dict]:
+        return next((u for u in self.users if u["id"] == uid), None)
+
+    def _find_by_email(self, email: str) -> Optional[dict]:
+        key = (email or "").strip().lower()
+        return next((u for u in self.users if u["email"] == key), None)
+
+    def create_user(self, name: str, email: str, password: str):
+        if self._find_by_email(email):
+            raise ValueError("email_taken")
+        salt = secrets.token_bytes(16)
+        user = {
+            "id": secrets.token_hex(8),
+            "name": (name or "").strip(),
+            "email": (email or "").strip().lower(),
+            "password_hash": _hash_password(password, salt),
+            "salt": salt.hex(),
+            "created_at": int(time.time()),
+        }
+        self.users.append(user)
+        token = self._issue_token(user["id"])
+        return user, token
+
+    def verify_login(self, email: str, password: str):
+        user = self._find_by_email(email)
+        if not user:
+            raise ValueError("bad_credentials")
+        salt = bytes.fromhex(user["salt"])
+        candidate = _hash_password(password or "", salt)
+        if not secrets.compare_digest(user["password_hash"], candidate):
+            raise ValueError("bad_credentials")
+        token = self._issue_token(user["id"])
+        return user, token
+
+    def _issue_token(self, uid: str) -> str:
+        token = _new_token()
+        self.tokens[token] = uid
+        self._save()
+        return token
+
+    def user_by_token(self, token: str) -> Optional[dict]:
+        uid = self.tokens.get(token)
+        return self._find_user(uid) if uid else None
+
+    def revoke(self, token: str) -> None:
+        if token in self.tokens:
+            del self.tokens[token]
+            self._save()
+
+
+def _public_user(user: dict) -> dict:
+    return {
+        "id": user["id"],
+        "name": user["name"],
+        "email": user["email"],
+        "created_at": user["created_at"],
+    }
+
+
+user_store = UserStore()
+
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/api/auth/register")
+async def register(req: RegisterRequest) -> dict:
+    name = (req.name or "").strip()
+    email = (req.email or "").strip().lower()
+    password = req.password or ""
+    if not name or "@" not in email or len(password) < 6:
+        raise HTTPException(status_code=400, detail="Enter your name, a valid email, and a password of at least 6 characters.")
+    try:
+        user, token = user_store.create_user(name, email, password)
+    except ValueError:
+        raise HTTPException(status_code=409, detail="An account with that email already exists.")
+    return {"token": token, "user": _public_user(user)}
+
+
+@app.post("/api/auth/login")
+async def login(req: LoginRequest) -> dict:
+    try:
+        user, token = user_store.verify_login(req.email or "", req.password or "")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    return {"token": token, "user": _public_user(user)}
+
+
+@app.get("/api/auth/me")
+async def me(authorization: Optional[str] = Header(default=None)) -> dict:
+    token = _bearer_token(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    user = user_store.user_by_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+    return {"user": _public_user(user)}
+
+
+@app.post("/api/auth/logout")
+async def logout(authorization: Optional[str] = Header(default=None)) -> dict:
+    token = _bearer_token(authorization)
+    if token:
+        user_store.revoke(token)
+    return {"ok": True}
 
 class RecommendationRequest(BaseModel):
     budget: Optional[float] = 0.0
@@ -412,6 +582,286 @@ async def recommendation_health() -> dict:
         'products': len(rec_engine.catalog) if rec_engine else 0,
         'model': MODEL_FILE.exists(),
     }
+
+
+# ------------------------------------------------------------------
+# Chat assistant — intent-based responses over the store's own data
+# (catalog, car recommender, trending + store FAQs). Phase 1 of the
+# roadmap: deterministic, zero-dependency. Phase 2 can swap the reply
+# builder for an LLM while keeping this endpoint contract.
+# ------------------------------------------------------------------
+
+class ChatRequest(BaseModel):
+    message: str
+    history: List[dict] = []
+
+
+def _fmt_money(value) -> str:
+    try:
+        return f"ETB {int(round(float(value))):,}"
+    except (TypeError, ValueError):
+        return str(value or 0)
+
+
+def _has(text: str, words) -> bool:
+    return any(word in text for word in words)
+
+
+def _parse_budget(text: str) -> Optional[float]:
+    for token in re.findall(r"\b\d[\d,.]*\b", text):
+        try:
+            value = float(token.replace(",", ""))
+        except ValueError:
+            continue
+        if value >= 1000:
+            return value
+    return None
+
+
+def _extract_fuel(text: str) -> str:
+    if _has(text, ('diesel',)):
+        return 'Diesel'
+    if _has(text, ('petrol', 'gasoline', 'benzine')):
+        return 'Petrol'
+    if _has(text, ('cng',)):
+        return 'CNG'
+    return 'any'
+
+
+def _extract_transmission(text: str) -> str:
+    if _has(text, ('manual',)):
+        return 'Manual'
+    if _has(text, ('automatic', 'auto gear', 'auto')):
+        return 'Automatic'
+    return 'any'
+
+
+def _extract_query(text: str) -> str:
+    cleaned = text.lower()
+    for prefix in (
+        'do you have', 'have you got', 'are you selling', 'is there any',
+        'looking for', 'search for', 'find me', 'show me', 'in stock',
+        'price of', 'cost of', 'how much is', 'what is the price of',
+        'what about', 'i want', 'i need',
+    ):
+        index = cleaned.find(prefix)
+        if index != -1:
+            cleaned = cleaned[index + len(prefix):]
+            break
+    cleaned = re.sub(r"^(a|an|the)\s+", "", cleaned)
+    return cleaned.strip(" ?!.,:;-")
+
+
+def _recommend_cars(budget: Optional[float], fuel: str, transmission: str) -> List[dict]:
+    if not car_catalog:
+        return []
+    scored = []
+    for car in car_catalog:
+        score = build_recommendation_score(car, budget or 0.0, fuel, transmission, None, None)
+        scored.append((score, car))
+    scored.sort(key=lambda pair: (pair[0], -pair[1]['popularity']), reverse=True)
+    return [car for _, car in scored[:3]]
+
+
+def _search_products(query: str) -> List[dict]:
+    if not query:
+        return []
+    needle = query.lower()
+    hits = []
+    seen = set()
+    products = rec_engine.all_products(200) if rec_engine else []
+    for product in products:
+        haystack = ' '.join(
+            str(x) for x in (
+                product.get('title'), product.get('category'),
+                product.get('tags'), product.get('shortDescription'),
+                product.get('brand'),
+            )
+        ).lower()
+        if needle in haystack:
+            key = str(product.get('title')).lower()
+            if key not in seen:
+                seen.add(key)
+                hits.append(product)
+    for car in (car_catalog or []):
+        haystack = ' '.join((car['title'], car['tags'])).lower()
+        if needle in haystack:
+            key = car['title'].lower()
+            if key not in seen:
+                seen.add(key)
+                hits.append(car)
+        if len(hits) >= 4:
+            break
+    return hits[:4]
+
+
+def _format_hit(hit: dict) -> str:
+    title = hit.get('title', '?')
+    if hit.get('priceText'):
+        price = str(hit['priceText'])
+    elif hit.get('priceValue') is not None:
+        price = _fmt_money(hit['priceValue'])
+    else:
+        price = _fmt_money(hit.get('price'))
+    kind = hit.get('category') or hit.get('fuel') or ''
+    return f"{title} — {price} · {kind}".rstrip(' ·')
+
+
+def _chat_reply(message: str):
+    text = message.lower()
+    suggestions: List[str] = []
+
+    if _has(text, ('bye', 'goodbye', 'see you', 'ttyl', 'good night')):
+        return "Goodbye! Come back anytime — I'll be here if you need help. 👋", []
+
+    if _has(text, ('thank',)):
+        return "You're welcome! Is there anything else I can help you with?", ['What can you do?', 'Recommend a car', 'Contact support']
+
+    if _has(text, ('hi', 'hello', 'hey', 'selam', 'salam', 'hola', 'good morning', 'good afternoon', 'good evening')):
+        return (
+            "Hello! I'm the Obama Store assistant. 🤖 I can help you find products, "
+            "recommend cars based on your budget, show you what's trending, or answer "
+            "questions about delivery, payment and returns. What would you like to do?"
+        ), ['What can you do?', 'Recommend a car', "What's trending?"]
+
+    if _has(text, ('what can you do', 'capabilities', 'help menu', 'options', 'how do you work')):
+        return (
+            "Here's what I can help with:\n\n"
+            "🛍️  Find products — try \"do you have a MacBook?\"\n"
+            "🚗  Car recommendations — \"recommend a diesel car under 50,000\"\n"
+            "📈  Trending — \"what's trending?\"\n"
+            "📦  Delivery — \"how long is delivery?\"\n"
+            "💳  Payment — \"how do I pay?\"\n"
+            "↩️  Returns — \"what's your return policy?\"\n"
+            "📞  Support — \"how do I contact support?\""
+        ), ['Recommend a car', "What's trending?", 'How do I pay?']
+
+    wants_car = _has(text, ('car', 'suv', 'sedan', 'pickup', 'vehicle')) and (
+        _has(text, ('recommend', 'budget', 'under', 'afford', 'cheap'))
+        or any(char.isdigit() for char in text)
+    )
+    if wants_car or _has(text, ('recommend',)) and _has(text, ('fuel', 'diesel', 'petrol', 'automatic', 'manual', 'transmission')):
+        budget = _parse_budget(text)
+        fuel = _extract_fuel(text)
+        transmission = _extract_transmission(text)
+        cars = _recommend_cars(budget, fuel, transmission)
+        if not cars:
+            return "I couldn't pull up car recommendations right now. Please try again in a moment.", []
+        lines = ["Here are the best car matches for you:" if not budget else f"Here are the best car matches under about {_fmt_money(budget)}:"]
+        for i, car in enumerate(cars, 1):
+            lines.append(
+                f"{i}. {car['title']} ({car['year']}) — {_fmt_money(car['price'])} · "
+                f"{car['fuel']} · {car['transmission']} · {car['km']:,} km"
+            )
+        lines.append("\nTip: tell me your budget, fuel type or transmission for tighter matches.")
+        return "\n".join(lines), ['Under 30,000', 'Diesel automatic', 'Budget 60,000']
+
+    if _has(text, ('trending', 'popular', 'best seller', 'best-selling', 'top selling', 'what sells')):
+        trending = []
+        if car_catalog:
+            trending = sorted(car_catalog, key=lambda c: (c['popularity'], -c['car_age'], c['price']), reverse=True)[:3]
+        if not trending:
+            return "Trending data is unavailable right now.", []
+        lines = ["Here are the currently trending cars:"]
+        for i, car in enumerate(trending, 1):
+            lines.append(
+                f"{i}. {car['title']} ({car['year']}) — {_fmt_money(car['price'])} · "
+                f"{car['fuel']} · {car['transmission']}"
+            )
+        lines.append("\nOpen the Recommendations page and hit \"Refresh Trending\" for the full list.")
+        return "\n".join(lines), ['Recommend a car', 'Under 30,000']
+
+    if _has(text, ('payment', 'pay', 'telebirr', 'cbe pay', 'how do i pay')):
+        return (
+            "We accept Telebirr, CBE Pay, and cash on delivery. Mobile payments are "
+            "processed securely at checkout. Want details on a specific option?"
+        ), ['Return policy', 'Contact support']
+
+    if _has(text, ('ship', 'deliver', 'delivery', 'how long')):
+        return (
+            "We deliver across Ethiopia — Addis Ababa usually within 1–3 business days, "
+            "and other regions in 3–7 days. Delivery is confirmed with you before checkout."
+        ), ['How do I pay?', 'Return policy']
+
+    if _has(text, ('return', 'refund', 'exchange', 'money back')):
+        return (
+            "Easy returns: contact us via the Contact page within 7 days of delivery and "
+            "we'll arrange a return or exchange. Items must be in original condition with packaging."
+        ), ['Contact support', 'How do I pay?']
+
+    if _has(text, ('contact', 'support', 'phone', 'call', 'telegram', 'email', 'reach', 'agent', 'human')):
+        return (
+            "You can reach us 24/7:\n\n"
+            "📞 Telegram / Phone: +251 9XX XXX XXX\n"
+            "✉️ Email: support@obamastore.example\n"
+            "📍 Addis Ababa, Ethiopia\n\n"
+            "The Contact page has the quickest route to our team."
+        ), ['Return policy', 'What can you do?']
+
+    if _has(text, ('hour', 'open', 'close', 'opening', 'when')):
+        return (
+            "Our support team is available 24/7. Order processing runs Monday–Saturday, "
+            "9:00–18:00 (EAT)."
+        ), ['Contact support']
+
+    if _has(text, ('login', 'log in', 'sign in', 'sign up', 'account', 'register')):
+        return (
+            "Use the \"Sign in\" button in the top bar — or open My Account — to sign in "
+            "or create an account. Accounts sync your cart, wishlist and profile across devices."
+        ), ['My Account', 'What can you do?']
+
+    if _has(text, ('cart', 'wishlist', 'favorite', 'favourite', 'saved items')):
+        return (
+            "Your cart and wishlist are saved automatically and survive a page refresh. "
+            "Open the 🛒 Cart or ♥ Wishlist icons in the top bar to review them."
+        ), ['Checkout', 'My Account']
+
+    if _has(text, ('good deal', 'fair price', 'overpriced', 'value', 'negotiat', 'worth it')):
+        if car_catalog:
+            best = min(car_catalog[:40], key=lambda c: (c['price'] / max(c['predicted_price'], 1), -c['popularity']))
+            return (
+                f"Every car is checked against an ML fair-price model. Right now the best "
+                f"value pick looks like {best['title']} — listed at {_fmt_money(best['price'])} "
+                f"vs a predicted fair price of {_fmt_money(best['predicted_price'])}."
+            ), ['Recommend a car', "What's trending?"]
+        return "I can't check values right now, but ask me to recommend a car and I'll pick by price.", ['Recommend a car']
+
+    query = _extract_query(message)
+    if _has(text, (
+        'have you', 'do you have', 'search', 'find', 'looking for', 'product',
+        'sell', 'in stock', 'price of', 'cost of', 'how much is', 'i want', 'i need',
+    )):
+        if not query:
+            return "Sure — tell me the product name, like \"do you have a MacBook?\" or \"iPhone 15\".", ['Recommend a car', "What's trending?"]
+        hits = _search_products(query)
+        if not hits:
+            return (
+                f"I couldn't find \"{query}\" in the store. Try a different name, or ask me to "
+                "search by category — cars, electronics, phones, wearables or fashion."
+            ), ['Cars', 'Electronics', 'Recommend a car']
+        lines = [f"I found these matches for \"{query}\":"]
+        for i, hit in enumerate(hits, 1):
+            lines.append(f"{i}. {_format_hit(hit)}")
+        return "\n".join(lines), ['Recommend a car', "What's trending?"]
+
+    if _has(text, ('help', 'assist')):
+        return "I'm here to help! Ask me about products, car recommendations, delivery, payment or returns.", ['What can you do?', 'Recommend a car']
+
+    return (
+        "I'm not sure I caught that. 🤔 Try asking about products, car recommendations, "
+        "delivery, payment or returns — or pick a suggestion below."
+    ), ['What can you do?', 'Recommend a car', "What's trending?"]
+
+
+@app.post('/api/chat')
+async def chat(req: ChatRequest) -> dict:
+    message = (req.message or '').strip()
+    if not message:
+        raise HTTPException(status_code=400, detail='Message cannot be empty.')
+    if len(message) > 2000:
+        raise HTTPException(status_code=400, detail='Message is too long.')
+    reply, suggestions = _chat_reply(message)
+    return {'reply': reply, 'suggestions': suggestions}
 
 
 # Mount static files last so API routes above are matched first.

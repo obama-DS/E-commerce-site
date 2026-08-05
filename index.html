@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="css/product.css">
     <link rel="stylesheet" href="css/recommend.css">
     <link rel="stylesheet" href="css/motion.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/chat.css">
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -41,6 +43,7 @@
                     <input type="search" placeholder="Search products..." id="headerSearch" aria-label="Search products">
                 </label>
                 <button type="button" class="icon-button" id="themeToggle" aria-label="Toggle color mode">🌙</button>
+                <button type="button" class="button secondary auth-btn" id="authBtn">Sign in</button>
                 <a class="nav-icon" href="#/wishlist" data-route="wishlist" aria-label="Wishlist" title="Wishlist">
                     <span aria-hidden="true">♥</span>
                     <span class="badge accent" id="wishlistCount">0</span>
@@ -544,11 +547,14 @@
                     <span class="section-pill">Profile</span>
                 </div>
                 <div class="profile-hero">
-                    <div class="profile-avatar" aria-hidden="true">O</div>
+                    <div class="profile-avatar" id="profileAvatar" aria-hidden="true">O</div>
                     <div>
-                        <h3>Guest shopper</h3>
-                        <p>Sign in to sync your cart, wishlist and orders across devices.</p>
+                        <h3 id="profileName">Guest shopper</h3>
+                        <p id="profileSubtitle">Sign in to sync your cart, wishlist and orders across devices.</p>
                     </div>
+                </div>
+                <div class="profile-actions" id="profileActions">
+                    <button type="button" class="button primary" id="authOpenBtn">Sign in / Create account</button>
                 </div>
                 <div class="profile-links">
                     <a href="#/cart">Your cart</a>
@@ -737,6 +743,77 @@
         </div>
     </aside>
 
+    <!-- ============================================================
+         AUTH MODAL
+         ============================================================ -->
+    <div class="modal-backdrop" id="authBackdrop" hidden></div>
+    <div class="modal auth-modal" id="authModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="authTitle">
+        <div class="modal-header">
+            <div>
+                <p class="eyebrow">Account</p>
+                <h2 id="authTitle">Sign in</h2>
+            </div>
+            <button type="button" class="icon-button" id="authCloseBtn" aria-label="Close">✕</button>
+        </div>
+        <div class="auth-tabs" role="tablist" aria-label="Authentication method">
+            <button type="button" class="auth-tab is-active" data-auth-tab="login" role="tab" aria-selected="true">Sign in</button>
+            <button type="button" class="auth-tab" data-auth-tab="register" role="tab" aria-selected="false">Create account</button>
+        </div>
+        <form id="loginForm" class="auth-form" novalidate>
+            <label>
+                Email
+                <input type="email" id="loginEmail" name="email" required autocomplete="email" placeholder="you@example.com">
+            </label>
+            <label>
+                Password
+                <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder="Your password">
+            </label>
+            <p class="auth-error" id="loginError" role="alert" hidden></p>
+            <button type="submit" class="button primary" id="loginSubmit">Sign in</button>
+        </form>
+        <form id="registerForm" class="auth-form" novalidate hidden>
+            <label>
+                Full name
+                <input type="text" id="regName" name="name" required autocomplete="name" placeholder="e.g. Abel Tesfaye">
+            </label>
+            <label>
+                Email
+                <input type="email" id="regEmail" name="email" required autocomplete="email" placeholder="you@example.com">
+            </label>
+            <label>
+                Password
+                <input type="password" id="regPassword" name="password" required minlength="6" autocomplete="new-password" placeholder="At least 6 characters">
+            </label>
+            <p class="auth-error" id="registerError" role="alert" hidden></p>
+            <button type="submit" class="button primary" id="registerSubmit">Create account</button>
+        </form>
+    </div>
+
+    <!-- ============================================================
+         CHAT ASSISTANT
+         ============================================================ -->
+    <button type="button" class="chat-launcher" id="chatLauncher" aria-label="Open chat assistant" aria-expanded="false">
+        <span aria-hidden="true">💬</span>
+    </button>
+    <div class="chat-widget" id="chatWidget" aria-hidden="true" aria-label="Store assistant chat">
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-avatar" aria-hidden="true">🤖</div>
+                <div class="chat-header-text">
+                    <strong>Store Assistant</strong>
+                    <span>Online · replies instantly</span>
+                </div>
+                <button type="button" class="icon-button chat-close" id="chatCloseBtn" aria-label="Close chat">✕</button>
+            </div>
+            <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+            <div class="chat-quick" id="chatQuick"></div>
+            <form class="chat-form" id="chatForm" novalidate>
+                <input type="text" id="chatInput" placeholder="Ask about products, cars, delivery…" aria-label="Message the assistant" autocomplete="off">
+                <button type="submit" class="chat-send" id="chatSendBtn" aria-label="Send message">➤</button>
+            </form>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" defer></script>
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" defer></script>
     <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js" defer></script>
@@ -744,6 +821,8 @@
     <script src="js/motion.js" defer></script>
     <script src="js/router.js" defer></script>
     <script src="js/store.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/chat.js" defer></script>
     <script src="js/catalog.js" defer></script>
     <script src="js/recommend.js" defer></script>
     <script src="js/home.js" defer></script>
