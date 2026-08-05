@@ -73,47 +73,86 @@ def _model() -> str:
     return (os.environ.get('OPENAI_MODEL') or 'gpt-4o-mini').strip()
 
 
+_DEFAULT_FALLBACK_MODELS = (
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-lite-latest',
+    'gpt-4o-mini',
+)
+
+
+def _models() -> list:
+    """Primary model plus fallbacks.
+
+    Gemini free-tier keys are limited per model (20 requests/day per model),
+    so on quota exhaustion we rotate through other models that share the same
+    key, effectively multiplying the daily budget. Configure extras via
+    OPENAI_FALLBACK_MODELS (comma separated).
+    """
+    chain = [_model()]
+    chain += [m.strip() for m in
+              (os.environ.get('OPENAI_FALLBACK_MODELS') or '').split(',')
+              if m.strip()]
+    chain += list(_DEFAULT_FALLBACK_MODELS)
+    seen = set()
+    out = []
+    for model in chain:
+        if model and model not in seen:
+            seen.add(model)
+            out.append(model)
+    return out
+
+
 def enabled() -> bool:
     return bool(_api_key())
 
 
-def _chat_completion(messages, tools=None, attempts=3):
-    payload = {
-        'model': _model(),
-        'messages': messages,
-        'temperature': 0.4,
-        'max_tokens': 1000,
-    }
-    if tools:
-        payload['tools'] = tools
-        payload['tool_choice'] = 'auto'
-    body = json.dumps(payload).encode('utf-8')
+def _chat_completion(messages, tools=None, attempts=2):
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
     last_error = None
-    for attempt in range(attempts):
-        request = urllib.request.Request(
-            _base_url() + '/chat/completions',
-            data=body,
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + _api_key(),
-            },
-            method='POST',
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                return json.loads(response.read().decode('utf-8'))
-        except urllib.error.HTTPError as error:
-            last_error = error
-            retryable = error.code in (408, 429) or error.code >= 500
-            if not retryable or attempt == attempts - 1:
+    for model in _models():
+        payload = {
+            'model': model,
+            'messages': messages,
+            'temperature': 0.4,
+            'max_tokens': 1000,
+        }
+        if tools:
+            payload['tools'] = tools
+            payload['tool_choice'] = 'auto'
+        body = json.dumps(payload).encode('utf-8')
+        for attempt in range(attempts):
+            request = urllib.request.Request(
+                _base_url() + '/chat/completions',
+                data=body,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + _api_key(),
+                },
+                method='POST',
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=timeout) as response:
+                    return json.loads(response.read().decode('utf-8'))
+            except urllib.error.HTTPError as error:
+                last_error = error
+                # 429 (quota/rate) and 404 (model not available to this key):
+                # move to the next model in the chain.
+                if error.code in (404, 429):
+                    break
+                # 408 / 5xx: transient, retry this model, then move on.
+                if error.code == 408 or error.code >= 500:
+                    if attempt == attempts - 1:
+                        break
+                    time.sleep(1 + attempt * 2)
+                    continue
                 raise
-            time.sleep(1 + attempt * 2)
-        except (urllib.error.URLError, OSError) as error:
-            last_error = error
-            if attempt == attempts - 1:
-                raise
-            time.sleep(1 + attempt * 2)
+            except (urllib.error.URLError, OSError) as error:
+                last_error = error
+                if attempt == attempts - 1:
+                    break
+                time.sleep(1 + attempt * 2)
+                continue
     raise last_error  # pragma: no cover
 
 
