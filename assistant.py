@@ -715,7 +715,8 @@ def answer(message, session, client_history):
         if time.monotonic() > deadline:
             break
         try:
-            response = _chat_completion(messages, tools=TOOLS)
+            response = _chat_completion(
+                messages, tools=TOOLS if _needs_tools(message) else None)
         except Exception:
             return None
         choice = response.get('choices') and response['choices'][0] or {}
