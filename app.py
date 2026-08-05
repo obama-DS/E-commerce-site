@@ -1568,10 +1568,14 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
                 f"Done! 🛒 I've added **{title}** ({price_text}) to your cart. "
                 f"Tap the card to view it, or open the 🛒 Cart to review and checkout."
             )
+            action = {'type': 'add_to_cart', 'title': title, 'priceText': price_text}
+            if top.get('priceValue') is not None:
+                action['productId'] = top.get('id', '')
+                action['openProduct'] = True
             return _rich_reply(
                 reply, [card],
                 ['View cart', 'Checkout', 'Recommend a car'],
-                action={'type': 'add_to_cart', 'title': title, 'priceText': price_text},
+                action=action,
             )
         category = _category_for(text)
         if category:
@@ -1678,6 +1682,7 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
                 f"Here's what we have in **{category}**:",
                 [_product_card(p) for p in products[:6]],
                 ['Recommend a car', "What's trending?"],
+                action={'type': 'open_products', 'category': category},
             )
 
     if _has(text, ('stock', 'available', 'availability', 'in stock', 'out of stock', 'do you have it')):
