@@ -777,7 +777,7 @@ def _h_car_recommendations(args, session):
     cars = _recommend_cars(budget, fuel_norm, trans_norm, keyword or type_norm)
     if cars:
         lines = [
-            f"- {c['title']} ({_fmt_money(c['price'])}) · {c.get('fuel', '')} · "
+            f"- {c.get('title')} ({_fmt_money(c.get('price'))}) · {c.get('fuel', '')} · "
             f"{c.get('transmission', '')} · {c.get('year', '')}"
             for c in cars
         ]
