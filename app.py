@@ -1964,7 +1964,9 @@ async def chat(req: ChatRequest) -> dict:
     if len(message) > 2000:
         message = message[:2000]
     try:
-        result = _chat_reply(message, session, req.history or [])
+        # _chat_reply performs blocking LLM HTTP + retries; run it off the
+        # event loop so one slow chat can't freeze health checks / other users.
+        result = await asyncio.to_thread(_chat_reply, message, session, req.history or [])
     except Exception:
         result = _response(
             "I ran into a tiny hiccup — but I'm still here! 🤖 Ask me about products, cars, delivery or payment.",
