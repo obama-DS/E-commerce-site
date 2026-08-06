@@ -514,33 +514,37 @@ def build_car_record(row: pd.Series, predicted_price: float) -> dict:
 
 def build_recommendation_score(car: dict, budget: float, fuel: str, transmission: str, km: Optional[int], age: Optional[int]) -> float:
     score = 0.0
+    predicted = float(car.get('predicted_price') or 0)
     if budget and budget > 0:
-        budget_gap = abs(car['predicted_price'] - budget) / max(budget, 1)
+        budget_gap = abs(predicted - budget) / max(budget, 1)
         score += max(0.0, 40.0 - budget_gap * 40.0)
     else:
         score += 10.0
 
-    if fuel != 'any' and fuel == car['fuel']:
+    car_fuel = str(car.get('fuel') or '')
+    if fuel != 'any' and fuel == car_fuel:
         score += 20.0
     elif fuel == 'any':
         score += 8.0
 
-    if transmission != 'any' and transmission == car['transmission']:
+    car_transmission = str(car.get('transmission') or '')
+    if transmission != 'any' and transmission == car_transmission:
         score += 16.0
     elif transmission == 'any':
         score += 6.0
 
-    if km is not None and car['km'] <= km:
+    if km is not None and float(car.get('km') or 0) <= km:
         score += 10.0
 
-    if age is not None and car['car_age'] <= age:
+    car_age = float(car.get('car_age') or 0)
+    if age is not None and car_age <= age:
         score += 8.0
 
-    if car['owner'].lower() == 'first owner':
+    if str(car.get('owner') or '').lower() == 'first owner':
         score += 5.0
 
-    score += max(0.0, 6.0 - car['car_age'] * 0.15)
-    score += min(10.0, car['popularity'] * 0.1)
+    score += max(0.0, 6.0 - car_age * 0.15)
+    score += min(10.0, float(car.get('popularity') or 0) * 0.1)
     return score
 
 
