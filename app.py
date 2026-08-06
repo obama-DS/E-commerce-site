@@ -1688,12 +1688,16 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
 
     if _has(text, ('good deal', 'fair price', 'overpriced', 'value', 'negotiat', 'worth it', 'best value', 'best bang', 'value pick')):
         if car_catalog:
-            ranked = sorted(car_catalog[:40], key=lambda c: (c['price'] / max(c['predicted_price'], 1), -c['popularity']))[:3]
+            ranked = sorted(
+                [c for c in car_catalog[:40] if isinstance(c, dict)],
+                key=lambda c: (float(c.get('price') or 0) / max(float(c.get('predicted_price') or 0), 1),
+                               -float(c.get('popularity') or 0)),
+            )[:3]
             best = ranked[0]
             reply = (
                 f"Every car is checked against an ML fair-price model. Right now the best value pick is "
-                f"**{best['title']}** — listed at {_fmt_money(best['price'])} vs a predicted fair price of "
-                f"{_fmt_money(best['predicted_price'])}.\n\nHere are the top value picks:"
+                f"**{best.get('title')}** — listed at {_fmt_money(best.get('price'))} vs a predicted fair price of "
+                f"{_fmt_money(best.get('predicted_price'))}.\n\nHere are the top value picks:"
             )
             return _rich_reply(reply, [_car_card(c) for c in ranked], ['Recommend a car', "What's trending?"])
         return _text_reply("I can't check values right now — ask me to recommend a car instead.", ['Recommend a car'])
