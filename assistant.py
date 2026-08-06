@@ -839,7 +839,7 @@ def _h_trending(args, session):
         ['**Trending Products:**']
         + [f"- {p.get('title')} — {_product_price(p)}" for p in top_products]
         + (['**Trending Cars:**']
-           + [f"- {c['title']} ({_fmt_money(c['price'])})" for c in top_cars]
+           + [f"- {c.get('title')} ({_fmt_money(c.get('price'))})" for c in top_cars]
            if top_cars else [])
     )
     return ('\n'.join(lines), cards)
