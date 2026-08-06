@@ -1050,7 +1050,11 @@ def _recommend_cars(budget: Optional[float] = None, fuel: str = 'any',
         type_norm = _normalize_car_filter(lowered, tuple(_CAR_TYPE_HINTS))
         kw_pool = []
         for car in pool:
-            haystack = f"{car['title']} {car['tags']}".lower()
+            if not isinstance(car, dict):
+                continue
+            title = str(car.get('title') or '')
+            tags = ' '.join(str(t) for t in (car.get('tags') or []))
+            haystack = f"{title} {tags}".lower()
             car_type = str(car.get('type') or '').lower()
             if lowered in haystack or type_norm != 'any' and car_type == type_norm.lower():
                 kw_pool.append(car)
@@ -1062,7 +1066,7 @@ def _recommend_cars(budget: Optional[float] = None, fuel: str = 'any',
 
     if fuel_norm != 'any':
         fuel_pool = [car for car in pool
-                     if str(car['fuel']).lower() == fuel_norm.lower()]
+                     if str(car.get('fuel', '')).lower() == fuel_norm.lower()]
         if fuel_pool:
             pool = fuel_pool
         else:
@@ -1070,7 +1074,7 @@ def _recommend_cars(budget: Optional[float] = None, fuel: str = 'any',
 
     if transmission_norm != 'any':
         trans_pool = [car for car in pool
-                      if str(car['transmission']).lower() == transmission_norm.lower()]
+                      if str(car.get('transmission', '')).lower() == transmission_norm.lower()]
         if trans_pool:
             pool = trans_pool
         else:
@@ -1080,7 +1084,7 @@ def _recommend_cars(budget: Optional[float] = None, fuel: str = 'any',
         return []
 
     if budget:
-        in_budget = [car for car in pool if car['price'] <= budget]
+        in_budget = [car for car in pool if float(car.get('price') or 0) <= budget]
         if in_budget:
             pool = in_budget
 
@@ -1089,7 +1093,7 @@ def _recommend_cars(budget: Optional[float] = None, fuel: str = 'any',
         score = build_recommendation_score(
             car, budget or 0.0, fuel_norm, transmission_norm, None, None)
         scored.append((score, car))
-    scored.sort(key=lambda pair: (pair[0], -pair[1]['popularity']), reverse=True)
+    scored.sort(key=lambda pair: (pair[0], -float(pair[1].get('popularity') or 0)), reverse=True)
     return [car for _, car in scored[:3]]
 
 
