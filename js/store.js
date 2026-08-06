@@ -938,7 +938,16 @@ window.StoreHelpers = {
   getRecentlyViewed,
   addItemToCart,
   openCart,
-  closeCart
+  closeCart,
+  // Expose cart contents so the chat assistant can read them for get_cart_summary
+  getCartItems() {
+    return cartEntries.map(item => ({
+      id: resolveProductId(item.title) || item.title,
+      title: item.title,
+      priceText: item.priceText,
+      qty: item.quantity || 1,
+    }));
+  },
 };
 
 function renderFavoritesPanel() {

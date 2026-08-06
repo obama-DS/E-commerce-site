@@ -910,6 +910,7 @@ class ChatRequest(BaseModel):
     message: str
     history: List[dict] = []
     session_id: str = ''
+    cart: List[dict] = []   # optional: browser cart state for get_cart_summary
 
 
 def _fmt_money(value) -> str:
@@ -1920,11 +1921,25 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
 async def chat(req: ChatRequest) -> dict:
     message = (req.message or '').strip()
     session, session_id = _get_or_create_session(req.session_id or '')
+
+    # Sync browser cart into session so get_cart_summary tool can read it.
+    if req.cart:
+        browser_cart = []
+        for item in req.cart[:30]:
+            if item.get('title'):
+                browser_cart.append({
+                    'id': str(item.get('id') or item.get('title') or ''),
+                    'title': str(item.get('title', ''))[:120],
+                    'priceText': str(item.get('priceText') or item.get('price') or ''),
+                    'qty': int(item.get('qty') or item.get('quantity') or 1),
+                })
+        session['cart_items'] = browser_cart
+
     if not message:
         return {
             'session_id': session_id,
-            'reply': "Hi! I'm Obama. 👋 What would you like to do?",
-            'suggestions': ['What can you do?', 'Recommend a car', "What's trending?"],
+            'reply': "Hi! I'm Obama — your store assistant. 🤖 Ask me anything about products, cars, delivery, payment, or just chat!",
+            'suggestions': ["What's trending?", 'Recommend a car', 'What can you do?'],
             'cards': [],
             'flow': None,
         }
