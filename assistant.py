@@ -801,7 +801,7 @@ def _h_car_recommendations(args, session):
         labels.append(f"of type {keyword or type_norm}")
     label_str = 'for ' + ' '.join(labels) if labels else ''
     lines = [
-        f"- {c['title']} ({_fmt_money(c['price'])}) · {c.get('fuel', '')} · "
+        f"- {c.get('title')} ({_fmt_money(c.get('price'))}) · {c.get('fuel', '')} · "
         f"{c.get('transmission', '')} · {c.get('year', '')}"
         for c in relaxed
     ]
