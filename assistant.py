@@ -1129,14 +1129,18 @@ def answer(message, session, client_history):
     if not message:
         return None
 
-    memory = _build_messages(session, message, client_history)
-    context = _retrieve(message)
+    deadline = time.monotonic() + float(os.environ.get('LLM_MAX_SECONDS', '60'))
+    try:
+        memory = _build_messages(session, message, client_history)
+        context = _retrieve(message)
+    except Exception as exc:
+        _log.warning('assistant pre-turn failed: %r', exc)
+        return None
     messages = [{'role': 'system', 'content': _system_prompt(context)}] + memory
     session.setdefault('ai_pending_actions', [])
 
     collected_cards = []
     reply = ''
-    deadline = time.monotonic() + float(os.environ.get('LLM_MAX_SECONDS', '60'))
 
     # Agentic loop: up to 4 rounds of tool-calling
     for _round in range(4):
@@ -1144,8 +1148,9 @@ def answer(message, session, client_history):
             break
         try:
             tools = TOOLS if _needs_tools(message) else None
-            response = _chat_completion(messages, tools=tools)
-        except Exception:
+            response = _chat_completion(messages, tools=tools, deadline=deadline)
+        except Exception as exc:
+            _log.warning('LLM call failed (round %d): %r', _round, exc)
             return None
         choice = (response.get('choices') or [{}])[0]
         choice_msg = choice.get('message') or {}
