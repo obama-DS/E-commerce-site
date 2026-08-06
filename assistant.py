@@ -329,13 +329,14 @@ def _recommend_cars(budget, fuel='any', transmission='any', keyword=''):
         except TypeError:
             return _recommend_cars_fn(budget, fuel, transmission) or []
     cars = _car_catalog()
+    cars = [c for c in cars if isinstance(c, dict)]
     if not cars:
         return []
     keyword = (keyword or '').strip().lower()
     if keyword:
         type_norm = _norm_filter(keyword, types=True)
         cars = [c for c in cars
-                if keyword in f"{c['title']} {c['tags']}".lower()
+                if keyword in f"{c.get('title', '')} {' '.join(str(t) for t in (c.get('tags') or []))}".lower()
                 or (type_norm != 'any'
                     and str(c.get('type') or '').lower() == type_norm.lower())]
         if not cars:
@@ -351,8 +352,8 @@ def _recommend_cars(budget, fuel='any', transmission='any', keyword=''):
             return []
 
     def rank(car):
-        score = float(car.get('popularity', 0))
-        if budget and car['price'] <= budget:
+        score = float(car.get('popularity', 0) or 0)
+        if budget and float(car.get('price') or 0) <= budget:
             score += 5.0
         if str(car.get('fuel', '')).lower() == str(fuel).lower():
             score += 3.0
@@ -360,7 +361,7 @@ def _recommend_cars(budget, fuel='any', transmission='any', keyword=''):
             score += 3.0
         return score
 
-    pool = [c for c in cars if c['price'] <= budget] if budget else cars
+    pool = [c for c in cars if float(c.get('price') or 0) <= budget] if budget else cars
     pool = pool or cars
     return sorted(pool, key=rank, reverse=True)[:3]
 
