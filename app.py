@@ -1708,7 +1708,7 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
             deals.sort(key=lambda p: p.get('discount', 0), reverse=True)
             lines = ["Here are the best active deals 🏷️:"]
             for d in deals[:4]:
-                lines.append(f"{d['title']} — {d['discount']}% off ({_format_currency(d['priceValue'], d.get('currency', 'ETB'))})")
+                lines.append(f"{d.get('title')} — {d.get('discount')}% off ({_format_currency(d.get('priceValue'), d.get('currency', 'ETB'))})")
             return _rich_reply('\n'.join(lines), [_product_card(p) for p in deals[:4]], ['Show me phones', 'Recommend a car'])
         return _text_reply("No special offers right now, but check the catalog for fresh drops!", ['Show me phones', 'Recommend a car'])
 
