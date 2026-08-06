@@ -5,3 +5,8 @@ __pycache__/
 *.log
 car_price_model.pkl
 .DS_Store
+
+# Never commit secrets
+.env
+*.env
+knowledge.db
