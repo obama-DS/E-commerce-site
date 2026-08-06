@@ -1672,7 +1672,11 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
     if _has(text, ('trending', 'popular', 'best seller', 'best-selling', 'top selling', 'what sells', 'top rated', 'best rated')):
         trending = []
         if car_catalog:
-            trending = sorted(car_catalog, key=lambda c: (c['popularity'], -c['car_age'], c['price']), reverse=True)[:3]
+            trending = sorted(
+                [c for c in car_catalog if isinstance(c, dict)],
+                key=lambda c: (float(c.get('popularity') or 0), -float(c.get('car_age') or 0), float(c.get('price') or 0)),
+                reverse=True,
+            )[:3]
         if not trending:
             return _text_reply("Trending data is unavailable right now — try asking about products instead.", ['Show me phones', 'Recommend a car'])
         cards = [_car_card(c) for c in trending]
