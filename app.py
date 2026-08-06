@@ -1101,6 +1101,8 @@ def _search_products(query: str, limit: int = 4) -> List[dict]:
     hits = []
     seen = set()
     for product in PRODUCTS:
+        if not isinstance(product, dict):
+            continue
         haystack = ' '.join(
             str(x) for x in (
                 product.get('title'), product.get('category'),
@@ -1114,9 +1116,13 @@ def _search_products(query: str, limit: int = 4) -> List[dict]:
                 seen.add(key)
                 hits.append(product)
     for car in (car_catalog or []):
-        haystack = ' '.join((car['title'], car['tags'])).lower()
+        if not isinstance(car, dict):
+            continue
+        title = str(car.get('title') or '')
+        tags = ' '.join(str(t) for t in (car.get('tags') or []))
+        haystack = ' '.join((title, tags)).lower()
         if needle in haystack or any(len(w) >= 4 and w in haystack for w in words):
-            key = car['title'].lower()
+            key = title.lower()
             if key not in seen:
                 seen.add(key)
                 hits.append(car)
