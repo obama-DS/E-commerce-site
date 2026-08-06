@@ -391,12 +391,98 @@ def choose_image(name: str) -> str:
     return _CAR_DEFAULT_IMAGE
 
 
+# Body-style classifier used to make car filters (SUV / Sedan / Hatchback /
+# MUV / Luxury) actually run. Values are looked up in order; the most
+# specific longer hints come first so e.g. "Swift Dzire" lands on Sedan.
+_CAR_TYPE_HINTS = {
+    'SUV': (
+        'creta', 'brezza', 'vitara', 'venue', 'nexon', 'punch', 'harrier',
+        'safari', 'scorpio', 'bolero', 'xuv', 'thar', 'compass', 'wrangler',
+        'fortuner', 'prado', 'land cruiser', 'landcruiser', 'endeavour',
+        'endeavor', 'captiva', 'seltos', 'sonet', 'tucson', 'sportage',
+        'duster', 'kushaq', 'tiguan', 'taigun', 's-cross', 'sx4', 'ecosport',
+        'eco sport', 'wr-v', 'br-v', 'brv', 'montero', 'pajero', 'kodiaq',
+        'hector', 'evoque', 'discovery', 'defender', 'range rover',
+        'highlander', 'outlander', 'cr-v', 'gloster', 'gurkha', 'kuv', 'tuv',
+        'alcazar', 'mu-x', 'kiger', 'magnite', 'x1', 'x3', 'x5', 'x7', 'q5',
+        'q7', 'gl-class', 'g-class', 'gls', 'gle', 'c3 aircross', 'suv',
+    ),
+    'Sedan': (
+        'corolla', 'civic', 'amaze', 'aura', 'dzire', 'aspire', 'tigor',
+        'vento', 'rapid', 'octavia', 'superb', 'c-class', 'c 220', 'c 200',
+        'a4', 'a6', '3 series', '5 series', 'jaguar xf', 'vectra', 'astra',
+        'logan', 'verito', 'sunny', 'scala', 'etios', 'yaris', 'indigo',
+        'zest', 'linea', 'fiesta', 'cielo', 'accord', 'camry', 'accent',
+        'slavia', 'virtue', 'xcent', 'verna', 'city', 'sedan', 'saloon',
+    ),
+    'Hatchback': (
+        'alto', 'wagon r', 'wagonr', 'i10', 'i20', 'polo', 'swift', 'ritz',
+        'celerio', 'k10', 'spark', 'tiago', 'punto', 'figo', 'micra',
+        'kwid', 'ignis', 'baleno', 's-presso', 'presso', 'santro', 'eon',
+        'beat', 'bolt', 'fabia', 'nano', 'redigo', 'redi-go', 'altroz',
+        'elia', 'k12', 'c3', 'up', 'go+', 'go t', 'hatch', 'hatchback',
+        '800',
+    ),
+    'MUV': (
+        'innova', 'ertiga', 'eeco', 'omni', 'supro', 'marazzo', 'xylo',
+        'tavera', 'enjoy', 'traveler', 'touristo', 'avanza', 'carens',
+        'xl6', 'sumo', 'muv', 'mpv', 'van',
+    ),
+    'Luxury': (
+        'mercedes', 'benz', 'bmw', 'audi', 'jaguar', 'volvo', 'lexus',
+        'porsche', 'maserati', 'range rover', 'bentley', 'rolls',
+        'luxury', 'premium',
+    ),
+}
+
+
+def _car_type(title: str) -> str:
+    """Best-effort body style for a car title, e.g. 'SUV', 'Sedan'."""
+    normalized = (title or '').lower()
+    for kind, hints in _CAR_TYPE_HINTS.items():
+        for hint in hints:
+            if hint in normalized:
+                return kind
+    return ''
+
+
+_FUEL_CHOICES = ('Petrol', 'Diesel', 'CNG', 'LPG', 'Electric', 'Hybrid')
+
+
+def _normalize_car_filter(value: str, choices: tuple) -> str:
+    """Map a user/model filter value onto a known choice, else 'any'."""
+    if not value:
+        return 'any'
+    cleaned = ' '.join(str(value).lower().split())
+    if (cleaned in ('', 'any', 'all', 'both')
+            or cleaned.startswith('any') or cleaned.startswith('all')
+            or cleaned.startswith('no ') or cleaned.startswith('no-preference')
+            or 'no preference' in cleaned):
+        return 'any'
+    for choice in choices:
+        if choice.lower() in cleaned or cleaned in choice.lower():
+            return choice
+    # common synonyms
+    synonyms = {
+        'auto': 'Automatic', 'automatic': 'Automatic', 'at': 'Automatic',
+        'manual': 'Manual', 'mt': 'Manual',
+        'petrol': 'Petrol', 'gasoline': 'Petrol', 'gas': 'Petrol',
+        'diesel': 'Diesel', 'cng': 'CNG', 'lpg': 'LPG', 'gas': 'Petrol',
+        'electric': 'Electric', 'ev': 'Electric', 'hybrid': 'Hybrid',
+        'suv': 'SUV', 'sedan': 'Sedan', 'hatchback': 'Hatchback',
+        'hatch': 'Hatchback', 'mpv': 'MUV', 'muv': 'MUV', 'van': 'MUV',
+        'luxury': 'Luxury', 'premium': 'Luxury',
+    }
+    return synonyms.get(cleaned, cleaned.title())
+
+
 def build_car_record(row: pd.Series, predicted_price: float) -> dict:
     car_age = pd.Timestamp.now().year - int(row['year'])
     tags = f"{row['name']} {row['fuel']} {row['transmission']} {row['seller_type']} {row['owner']}"
     return {
         'id': int(row.name),
         'title': str(row['name']),
+        'type': _car_type(str(row['name'])),
         'year': int(row['year']),
         'price': int(row['selling_price']),
         'predicted_price': float(round(predicted_price, 0)),
@@ -922,18 +1008,67 @@ def _extract_query(text: str) -> str:
     return cleaned.strip(" ?!.,:;-")
 
 
-def _recommend_cars(budget: Optional[float], fuel: str, transmission: str) -> List[dict]:
+def _recommend_cars(budget: Optional[float] = None, fuel: str = 'any',
+                    transmission: str = 'any', keyword: str = '') -> List[dict]:
+    """Return the 3 best cars matching the requested criteria.
+
+    Filters are applied strictly: a requested fuel, transmission, body type
+    or keyword narrows the pool, so "a diesel SUV under 3 million" only ever
+    returns diesel SUVs under budget. If a filter would empty the pool, an
+    empty list is returned so callers can fall back gracefully.
+    """
     if not car_catalog:
         return []
     pool = car_catalog
+
+    fuel_norm = _normalize_car_filter(fuel, _FUEL_CHOICES)
+    transmission_norm = _normalize_car_filter(transmission, ('Manual', 'Automatic'))
+
+    keyword = (keyword or '').strip()
+    if keyword:
+        lowered = keyword.lower()
+        words = [w for w in lowered.split() if len(w) > 2]
+        type_norm = _normalize_car_filter(lowered, tuple(_CAR_TYPE_HINTS))
+        kw_pool = []
+        for car in pool:
+            haystack = f"{car['title']} {car['tags']}".lower()
+            car_type = str(car.get('type') or '').lower()
+            if lowered in haystack or type_norm != 'any' and car_type == type_norm.lower():
+                kw_pool.append(car)
+                continue
+            if any(w in haystack for w in words):
+                kw_pool.append(car)
+        if kw_pool:
+            pool = kw_pool
+
+    if fuel_norm != 'any':
+        fuel_pool = [car for car in pool
+                     if str(car['fuel']).lower() == fuel_norm.lower()]
+        if fuel_pool:
+            pool = fuel_pool
+        else:
+            return []
+
+    if transmission_norm != 'any':
+        trans_pool = [car for car in pool
+                      if str(car['transmission']).lower() == transmission_norm.lower()]
+        if trans_pool:
+            pool = trans_pool
+        else:
+            return []
+
+    if not pool:
+        return []
+
     if budget:
         in_budget = [car for car in pool if car['price'] <= budget]
-        if not in_budget:
-            return [min(pool, key=lambda c: c['price'])]
-        pool = in_budget
+        if in_budget:
+            pool = in_budget
+
     scored = []
     for car in pool:
-        score = build_recommendation_score(car, budget or 0.0, fuel, transmission, None, None)
+        score = build_recommendation_score(
+            car, budget or 0.0, fuel_norm, transmission_norm, None, None)
         scored.append((score, car))
     scored.sort(key=lambda pair: (pair[0], -pair[1]['popularity']), reverse=True)
     return [car for _, car in scored[:3]]
@@ -1009,6 +1144,7 @@ def _car_card(car: dict) -> dict:
     return {
         'type': 'car',
         'title': car.get('title', ''),
+        'carType': car.get('type', ''),
         'year': car.get('year'),
         'priceText': _fmt_money(price),
         'fuel': car.get('fuel', ''),
