@@ -374,3 +374,90 @@ def _kb_search(query: str, limit: int = 3):
     except Exception:
         return []
 
+
+# ---------------------------------------------------------------------------
+# Store facts (exact — never invented by the model)
+# ---------------------------------------------------------------------------
+
+def _contact_text() -> str:
+    c = _CONTACT
+    return (
+        f"- Phones: {c.get('phones', '')}\n"
+        f"- Email: {c.get('email', '')}\n"
+        f"- Developer: {c.get('developer', '')}\n"
+        f"- City: {c.get('city', '')}"
+    )
+
+def _store_facts() -> dict:
+    c = _CONTACT
+    contact = (
+        f"You can reach Obama Store at:\n- Phones: {c.get('phones', '')}\n"
+        f"- Email: {c.get('email', '')}"
+    )
+    return {
+        'contact': contact,
+        'about': (
+            f"Obama Store is an Ethiopian e-commerce platform created by "
+            f"{c.get('developer', '')} in {c.get('city', '')}. It sells "
+            f"electronics, mobile, fashion, wearables, accessories and "
+            f"verified used cars, with every car priced against an ML "
+            f"fair-price model. Contact: {c.get('phones', '')} / "
+            f"{c.get('email', '')}"
+        ),
+        'payment': (
+            "We accept Telebirr, CBE Pay, and cash on delivery. "
+            "Mobile payments are processed securely at checkout."
+        ),
+        'delivery': (
+            "We deliver across Ethiopia — Addis Ababa usually within "
+            "1-3 business days, and other regions in 3-7 days. Delivery "
+            "is confirmed with the customer before checkout."
+        ),
+        'returns': (
+            "Easy returns: contact us within 7 days of delivery to arrange "
+            "a return or exchange. Items must be in original condition with "
+            "packaging."
+        ),
+        'hours': (
+            "Support is available 24/7. Order processing runs "
+            "Monday-Saturday, 9:00-18:00 (EAT)."
+        ),
+        'warranty': (
+            "Every product includes the manufacturer warranty, and cars "
+            "come with a verified-ownership guarantee. Anything defective "
+            "on arrival is replaced or repaired free within 7 days."
+        ),
+        'orders': (
+            "Orders can be tracked in My Account → Order History, or by "
+            "replying with the order number. Orders usually update within "
+            "minutes of shipping."
+        ),
+        'security': (
+            "Payments are processed securely, products are checked for "
+            "authenticity before dispatch, and customer data is never "
+            "shared."
+        ),
+        'general': (
+            f"Obama Store ({c.get('city', '')}) sells electronics, mobile, "
+            f"fashion, wearables, accessories and verified used cars. "
+            f"Phones: {c.get('phones', '')}. Email: {c.get('email', '')}. "
+            "Accepts Telebirr, CBE Pay and cash on delivery. "
+            "Delivery nationwide in 1-7 business days; returns within 7 days."
+        ),
+    }
+
+_POLICY_TOPICS = {
+    'contact':  ('contact', 'phone', 'call', 'email', 'reach', 'number', 'address', 'talk'),
+    'about':    ('about', 'who made', 'developer', 'history', 'what is obama', 'about the store'),
+    'payment':  ('pay', 'payment', 'telebirr', 'cbe', 'cash', 'mobile money'),
+    'delivery': ('deliver', 'ship', 'shipping', 'how long', 'arrive', 'get here'),
+    'returns':  ('return', 'refund', 'exchange', 'money back'),
+    'hours':    ('hour', 'open', 'close', 'when', 'support'),
+    'warranty': ('warranty', 'guarantee', 'defect', 'broken'),
+    'orders':   ('order', 'track', 'status'),
+    'security': ('secure', 'safe', 'trust', 'authentic', 'legit'),
+}
+
+# All categories in the store
+_CATEGORIES = ['Cars', 'Electronics', 'Mobile', 'Fashion', 'Wearables', 'Accessories']
+
