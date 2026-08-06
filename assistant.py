@@ -1067,11 +1067,20 @@ def _summarize_if_long(memory: list) -> list:
              if m.get('role') in ('user', 'assistant')
              and not m.get('tool_calls')
              and m.get('content')]
+    # Drop any trailing user turn that never got an assistant reply, so the
+    # LLM never sees consecutive unbalanced user messages.
+    while clean and clean[-1].get('role') == 'user':
+        clean.pop()
     return clean[-18:]
 
 
 def _build_messages(session, message: str, client_history: list) -> list:
-    """Build the message list for this turn, merging server memory + client history."""
+    """Build the message list for this turn, merging server memory + client history.
+
+    Returns a new list; does NOT mutate the session. The caller (answer)
+    persists `session['ai_messages']` only on a successful LLM turn so a
+    failed/fallback turn never pollutes memory.
+    """
     memory = session.get('ai_messages')
     if not memory:
         # First turn in this session — bootstrap from client-side history
@@ -1085,7 +1094,6 @@ def _build_messages(session, message: str, client_history: list) -> list:
     # Avoid duplicating the last message
     if not memory or memory[-1].get('content') != message:
         memory.append({'role': 'user', 'content': message[:4000]})
-    session['ai_messages'] = memory
     return memory
 
 
