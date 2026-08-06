@@ -1898,10 +1898,10 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
                         state = f'in stock ({stock} left)'
                     else:
                         state = 'currently out of stock'
-                    lines.append(f"{h['title']}: {state}.")
+                    lines.append(f"{h.get('title')}: {state}.")
                     cards.append(_product_card(h))
                 else:
-                    lines.append(f"{h['title']}: in stock.")
+                    lines.append(f"{h.get('title')}: in stock.")
             return _rich_reply('\n'.join(lines), cards, ['Show me more', 'Recommend a car'])
         return _text_reply(
             "Everything shown in the catalog is available to order. Want me to check a specific product?",
