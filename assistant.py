@@ -53,7 +53,7 @@ def _car_catalog():
     except Exception:
         return []
 
-
+    
 # ---------------------------------------------------------------------------
 # LLM configuration (env vars)
 # ---------------------------------------------------------------------------
@@ -166,4 +166,211 @@ def _chat_completion(messages, tools=None, attempts=2):
                 time.sleep(1 + attempt * 2)
                 continue
     raise last_error  # pragma: no cover
+
+
+# ---------------------------------------------------------------------------
+# Formatting helpers
+# ---------------------------------------------------------------------------
+
+def _fmt_money(value) -> str:
+    try:
+        return f"ETB {int(round(float(value))):,}"
+    except (TypeError, ValueError):
+        return str(value or 0)
+
+def _product_price(product: dict) -> str:
+    currency = product.get('currency', 'ETB')
+    value = product.get('priceValue')
+    if value is None:
+        return _fmt_money(product.get('price'))
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return 'ETB 0'
+    if currency == 'ETB':
+        return f"ETB {int(round(numeric)):,}"
+    return f"${numeric:,.2f}"
+
+def _product_card(product: dict) -> dict:
+    images = product.get('images') or []
+    return {
+        'type': 'product',
+        'id': product.get('id', ''),
+        'title': product.get('title', ''),
+        'category': product.get('category', ''),
+        'badge': product.get('badge', ''),
+        'priceText': _product_price(product),
+        'currency': product.get('currency', 'ETB'),
+        'rating': product.get('rating'),
+        'reviewCount': product.get('reviewCount'),
+        'discount': product.get('discount', 0),
+        'stock': product.get('stock'),
+        'image': images[0] if images else '',
+        'shortDescription': product.get('shortDescription', ''),
+    }
+
+def _car_card(car: dict) -> dict:
+    price = car.get('price') or 0
+    pred = car.get('predicted_price') or 0
+    value_tag = ''
+    if pred and price:
+        ratio = price / max(pred, 1)
+        value_tag = ('Great deal' if ratio < 0.95
+                     else 'Fair price' if ratio <= 1.05
+                     else 'Priced high')
+    return {
+        'type': 'car',
+        'title': car.get('title', ''),
+        'carType': car.get('type', ''),
+        'year': car.get('year'),
+        'priceText': _fmt_money(price),
+        'fuel': car.get('fuel', ''),
+        'transmission': car.get('transmission', ''),
+        'km': car.get('km'),
+        'valueTag': value_tag,
+        'predictedText': _fmt_money(pred),
+        'owner': car.get('owner', ''),
+        'sellerType': car.get('seller_type', ''),
+        'image': car.get('imageUrl') or car.get('fallbackImage') or '',
+    }
+
+def _hit_card(hit: dict) -> dict:
+    if hit.get('priceValue') is not None:
+        return _product_card(hit)
+    return _car_card(hit)
+
+def _product_line(hit: dict) -> str:
+    title = hit.get('title', '?')
+    if hit.get('priceValue') is not None:
+        price = _product_price(hit)
+        kind = hit.get('category', '')
+        stock = hit.get('stock')
+        stock_txt = f", stock {stock}" if stock is not None else ''
+        desc = hit.get('shortDescription', '')
+        desc_txt = f", {desc}" if desc else ''
+        return f"{title} ({kind}) {price}{stock_txt}{desc_txt}, id={hit.get('id', '')}"
+    price = _fmt_money(hit.get('price'))
+    kind = hit.get('fuel', '')
+    return f"{title} ({kind}) {price}"
+
+
+# ---------------------------------------------------------------------------
+# Product / car search helpers
+# ---------------------------------------------------------------------------
+
+def _search_products(query: str, limit: int = 5):
+    if not query:
+        return []
+    needle = query.lower()
+    words = [w for w in needle.split() if len(w) > 1]
+    hits = []
+    seen = set()
+    for product in PRODUCTS:
+        haystack = ' '.join(str(x) for x in (
+            product.get('title'), product.get('category'),
+            product.get('tags'), product.get('shortDescription'),
+            product.get('brand'),
+        )).lower()
+        if needle in haystack or any(len(w) >= 3 and w in haystack for w in words):
+            key = str(product.get('title')).lower()
+            if key not in seen:
+                seen.add(key)
+                hits.append(product)
+    for car in _car_catalog():
+        haystack = ' '.join((car['title'], car['tags'])).lower()
+        if needle in haystack or any(len(w) >= 3 and w in haystack for w in words):
+            key = car['title'].lower()
+            if key not in seen:
+                seen.add(key)
+                hits.append(car)
+        if len(hits) >= limit:
+            break
+    return hits[:limit]
+
+def _get_product_by_id(product_id: str):
+    """Return a single product by its id."""
+    pid = (product_id or '').lower().strip()
+    for p in PRODUCTS:
+        if (p.get('id') or '').lower() == pid:
+            return p
+    return None
+
+def _recommend_cars(budget, fuel='any', transmission='any', keyword=''):
+    if _recommend_cars_fn is not None:
+        try:
+            return _recommend_cars_fn(budget, fuel, transmission, keyword) or []
+        except TypeError:
+            return _recommend_cars_fn(budget, fuel, transmission) or []
+    cars = _car_catalog()
+    if not cars:
+        return []
+    keyword = (keyword or '').strip().lower()
+    if keyword:
+        type_norm = _norm_filter(keyword, types=True)
+        cars = [c for c in cars
+                if keyword in f"{c['title']} {c['tags']}".lower()
+                or (type_norm != 'any'
+                    and str(c.get('type') or '').lower() == type_norm.lower())]
+        if not cars:
+            return []
+    if fuel != 'any':
+        cars = [c for c in cars if str(c.get('fuel', '')).lower() == fuel.lower()]
+        if not cars:
+            return []
+    if transmission != 'any':
+        cars = [c for c in cars
+                if str(c.get('transmission', '')).lower() == transmission.lower()]
+        if not cars:
+            return []
+
+    def rank(car):
+        score = float(car.get('popularity', 0))
+        if budget and car['price'] <= budget:
+            score += 5.0
+        if str(car.get('fuel', '')).lower() == str(fuel).lower():
+            score += 3.0
+        if str(car.get('transmission', '')).lower() == str(transmission).lower():
+            score += 3.0
+        return score
+
+    pool = [c for c in cars if c['price'] <= budget] if budget else cars
+    pool = pool or cars
+    return sorted(pool, key=rank, reverse=True)[:3]
+
+_FILTER_CHOICES = (
+    'Petrol', 'Diesel', 'CNG', 'LPG', 'Electric', 'Hybrid',
+    'Manual', 'Automatic', 'SUV', 'Sedan', 'Hatchback', 'MUV', 'Luxury',
+)
+
+def _norm_filter(value, types=False):
+    if not value:
+        return 'any'
+    cleaned = ' '.join(str(value).lower().split())
+    if (cleaned in ('', 'any', 'all', 'both')
+            or cleaned.startswith('any') or cleaned.startswith('all')
+            or cleaned.startswith('no ') or 'no preference' in cleaned):
+        return 'any'
+    for choice in _FILTER_CHOICES:
+        if choice.lower() in cleaned or cleaned in choice.lower():
+            return choice
+    synonyms = {
+        'auto': 'Automatic', 'at': 'Automatic', 'cvt': 'Automatic',
+        'manual': 'Manual', 'mt': 'Manual',
+        'gasoline': 'Petrol', 'gas': 'Petrol',
+        'ev': 'Electric', 'evs': 'Electric',
+        'suv': 'SUV', 'suvs': 'SUV', '4x4': 'SUV', 'off-road': 'SUV',
+        'sedan': 'Sedan', 'sedans': 'Sedan', 'saloon': 'Sedan',
+        'hatch': 'Hatchback', 'hatchback': 'Hatchback',
+        'mpv': 'MUV', 'muv': 'MUV', 'van': 'MUV', 'minivan': 'MUV',
+        'luxury': 'Luxury', 'premium': 'Luxury',
+    }
+    return synonyms.get(cleaned, cleaned.title() if types else 'any')
+
+def _kb_search(query: str, limit: int = 3):
+    if _kb is None:
+        return []
+    try:
+        return _kb.search(query, limit=limit) or []
+    except Exception:
+        return []
 
