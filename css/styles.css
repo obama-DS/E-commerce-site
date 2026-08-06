@@ -1563,3 +1563,15 @@ main {
   opacity: 1;
   transform: none;
 }
+
+/* Admin-only product management controls.
+   Toggled by auth.js via body.is-admin. */
+.edit-product-btn,
+.remove-product-btn {
+  display: inline-block;
+}
+
+body:not(.is-admin) .edit-product-btn,
+body:not(.is-admin) .remove-product-btn {
+  display: none !important;
+}

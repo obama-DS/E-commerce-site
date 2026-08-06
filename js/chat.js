@@ -440,7 +440,7 @@
     busy = true;
     var typing = showTyping();
 
-    fetch('/api/chat', {
+    fetch((window.location.protocol.indexOf('http') === 0 ? window.location.origin : 'http://127.0.0.1:8000') + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

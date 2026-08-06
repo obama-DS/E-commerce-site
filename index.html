@@ -179,8 +179,6 @@
                                 <div class="product-actions">
                                     <button class="add-cart-btn" type="button">Add to cart</button>
                                     <button class="view-details-btn" type="button">View details</button>
-                                    <button class="edit-product-btn" type="button">Edit</button>
-                                    <button class="remove-product-btn" type="button">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -200,8 +198,6 @@
                                 <div class="product-actions">
                                     <button class="add-cart-btn" type="button">Add to cart</button>
                                     <button class="view-details-btn" type="button">View details</button>
-                                    <button class="edit-product-btn" type="button">Edit</button>
-                                    <button class="remove-product-btn" type="button">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -221,8 +217,6 @@
                                 <div class="product-actions">
                                     <button class="add-cart-btn" type="button">Add to cart</button>
                                     <button class="view-details-btn" type="button">View details</button>
-                                    <button class="edit-product-btn" type="button">Edit</button>
-                                    <button class="remove-product-btn" type="button">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -242,8 +236,6 @@
                                 <div class="product-actions">
                                     <button class="add-cart-btn" type="button">Add to cart</button>
                                     <button class="view-details-btn" type="button">View details</button>
-                                    <button class="edit-product-btn" type="button">Edit</button>
-                                    <button class="remove-product-btn" type="button">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -263,8 +255,6 @@
                                 <div class="product-actions">
                                     <button class="add-cart-btn" type="button">Add to cart</button>
                                     <button class="view-details-btn" type="button">View details</button>
-                                    <button class="edit-product-btn" type="button">Edit</button>
-                                    <button class="remove-product-btn" type="button">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -284,8 +274,6 @@
                                 <div class="product-actions">
                                     <button class="add-cart-btn" type="button">Add to cart</button>
                                     <button class="view-details-btn" type="button">View details</button>
-                                    <button class="edit-product-btn" type="button">Edit</button>
-                                    <button class="remove-product-btn" type="button">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -294,45 +282,6 @@
             </div>
 
             <div id="productsRecMount" data-recommend-slot="recommended"></div>
-
-            <section id="owner" class="owner-section section-card">
-                <h2>Owner Dashboard</h2>
-                <p>Add new products to your store with image, description, price, and search tags.</p>
-                <form id="ownerForm">
-                    <label>
-                        Product Title
-                        <input type="text" id="newTitle" required>
-                    </label>
-                    <label>
-                        Image URL
-                        <input type="url" id="newImage" placeholder="https://example.com/product.jpg" required>
-                    </label>
-                    <label>
-                        Price
-                        <input type="text" id="newPrice" placeholder="e.g. 299.99" required>
-                    </label>
-                    <label>
-                        Description
-                        <textarea id="newDescription" rows="3" required></textarea>
-                    </label>
-                    <label>
-                        Search Tags
-                        <input type="text" id="newTags" placeholder="laptop windows ram storage">
-                    </label>
-                    <button type="submit">Add Product</button>
-                    <button type="button" id="resetOwnerForm">Reset</button>
-                </form>
-                <img id="productPreview" alt="Product preview" style="display:none; max-width:200px; margin-top:12px;" />
-                <div id="ownerMessage" class="owner-message"></div>
-            </section>
-
-            <section id="marketplace" class="marketplace-section section-card">
-                <h2>Marketplace Products</h2>
-                <p>Load example products from Amazon-style and Express-style sellers.</p>
-                <button type="button" id="loadMarketplaceBtn">Load marketplace products</button>
-                <button type="button" id="clearMarketplaceBtn">Clear marketplace products</button>
-                <div id="marketplaceGrid" class="product-grid" style="margin-top: 16px;"></div>
-            </section>
         </section>
 
         <!-- CATEGORIES -->
@@ -562,7 +511,65 @@
                     <a href="#/wishlist">Your wishlist</a>
                     <button type="button" disabled title="Coming soon">Order history</button>
                     <button type="button" disabled title="Coming soon">Payment methods</button>
+                    <a href="#/admin" id="adminDashboardLink" hidden>Admin · Dashboard</a>
                     <a href="#/kb" id="kbAdminLink" hidden>Admin · Knowledge Base</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADMIN DASHBOARD -->
+        <section class="page" data-page="admin" aria-labelledby="admin-title">
+            <div class="section-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Store owner</p>
+                        <h2 id="admin-title">Admin Dashboard</h2>
+                    </div>
+                    <span class="section-pill">Admin</span>
+                </div>
+                <p>Manage your store: add, edit or remove products and curate the marketplace.</p>
+
+                <section class="owner-section">
+                    <h3>Add / Edit Product</h3>
+                    <p>Add new products to your store with image, description, price, and search tags.</p>
+                    <form id="ownerForm">
+                        <label>
+                            Product Title
+                            <input type="text" id="newTitle" required>
+                        </label>
+                        <label>
+                            Image URL
+                            <input type="url" id="newImage" placeholder="https://example.com/product.jpg" required>
+                        </label>
+                        <label>
+                            Price
+                            <input type="text" id="newPrice" placeholder="e.g. 299.99" required>
+                        </label>
+                        <label>
+                            Description
+                            <textarea id="newDescription" rows="3" required></textarea>
+                        </label>
+                        <label>
+                            Search Tags
+                            <input type="text" id="newTags" placeholder="laptop windows ram storage">
+                        </label>
+                        <button type="submit">Add Product</button>
+                        <button type="button" id="resetOwnerForm">Reset</button>
+                    </form>
+                    <img id="productPreview" alt="Product preview" style="display:none; max-width:200px; margin-top:12px;" />
+                    <div id="ownerMessage" class="owner-message"></div>
+                </section>
+
+                <section class="marketplace-section">
+                    <h3>Marketplace Products</h3>
+                    <p>Load example products from Amazon-style and Express-style sellers.</p>
+                    <button type="button" id="loadMarketplaceBtn">Load marketplace products</button>
+                    <button type="button" id="clearMarketplaceBtn">Clear marketplace products</button>
+                    <div id="marketplaceGrid" class="product-grid" style="margin-top: 16px;"></div>
+                </section>
+
+                <div class="admin-links">
+                    <a class="button secondary" href="#/kb">Open Knowledge Base</a>
                 </div>
             </div>
         </section>
@@ -661,6 +668,7 @@
             <a href="#/cart">Cart</a>
             <a href="#/wishlist">Wishlist</a>
             <a href="#/profile">My Account</a>
+            <a href="#/admin" id="adminFooterLink" hidden>Admin Dashboard</a>
             <a href="#/recommendations">Car Recommender</a>
             <a href="#/contact">Contact us</a>
         </div>
@@ -843,10 +851,10 @@
     <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" defer></script>
     <script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js" defer></script>
     <script src="https://unpkg.com/framer-motion@11.11.17/dist/framer-motion.js" defer></script>
-    <script src="js/motion.js" defer></script>
-    <script src="js/router.js" defer></script>
-    <script src="js/store.js" defer></script>
+<script src="js/motion.js" defer></script>
 <script src="js/auth.js" defer></script>
+<script src="js/router.js" defer></script>
+<script src="js/store.js" defer></script>
 <script src="js/kb.js" defer></script>
 <script src="js/chat.js" defer></script>
     <script src="js/catalog.js" defer></script>

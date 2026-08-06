@@ -20,12 +20,15 @@ Falls back to None on any error so app.py can use the rule engine.
 """
 
 import json
+import logging
 import os
 import time
 import urllib.error
 import urllib.request
 
 from recommend_engine import PRODUCTS
+
+_log = logging.getLogger('assistant')
 
 # ---------------------------------------------------------------------------
 # Runtime wiring (injected from app.py at startup)
@@ -68,9 +71,9 @@ def _model() -> str:
     return (os.environ.get('OPENAI_MODEL') or 'gpt-4o-mini').strip()
 
 _DEFAULT_FALLBACK_MODELS = (
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-lite-latest',
     'gpt-4o-mini',
 )
 
@@ -121,10 +124,23 @@ def _needs_tools(text: str) -> bool:
 # LLM HTTP call with model fallback chain
 # ---------------------------------------------------------------------------
 
-def _chat_completion(messages, tools=None, attempts=2):
+def _sleep(seconds: float, deadline=None):
+    """Sleep without overshooting the caller's hard deadline."""
+    if deadline is not None:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return
+        seconds = min(seconds, remaining)
+    if seconds > 0:
+        time.sleep(seconds)
+
+
+def _chat_completion(messages, tools=None, attempts=2, deadline=None):
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
     last_error = None
     for model in _models():
+        if deadline is not None and time.monotonic() > deadline:
+            break
         payload = {
             'model': model,
             'messages': messages,
@@ -136,6 +152,8 @@ def _chat_completion(messages, tools=None, attempts=2):
             payload['tool_choice'] = 'auto'
         body = json.dumps(payload).encode('utf-8')
         for attempt in range(attempts):
+            if deadline is not None and time.monotonic() > deadline:
+                break
             req = urllib.request.Request(
                 _base_url() + '/chat/completions',
                 data=body,
@@ -155,16 +173,20 @@ def _chat_completion(messages, tools=None, attempts=2):
                 if err.code == 408 or err.code >= 500:
                     if attempt == attempts - 1:
                         break
-                    time.sleep(1 + attempt * 2)
+                    _sleep(1 + attempt * 2, deadline)
                     continue
                 raise
             except (urllib.error.URLError, OSError) as err:
                 last_error = err
                 if attempt == attempts - 1:
                     break
-                time.sleep(1 + attempt * 2)
+                _sleep(1 + attempt * 2, deadline)
                 continue
-    raise last_error  # pragma: no cover
+    if deadline is not None and time.monotonic() > deadline:
+        raise TimeoutError('LLM deadline exceeded')
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError('LLM call returned no result')
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +287,8 @@ def _search_products(query: str, limit: int = 5):
     hits = []
     seen = set()
     for product in PRODUCTS:
+        if not isinstance(product, dict):
+            continue
         haystack = ' '.join(str(x) for x in (
             product.get('title'), product.get('category'),
             product.get('tags'), product.get('shortDescription'),
@@ -276,9 +300,13 @@ def _search_products(query: str, limit: int = 5):
                 seen.add(key)
                 hits.append(product)
     for car in _car_catalog():
-        haystack = ' '.join((car['title'], car['tags'])).lower()
+        if not isinstance(car, dict):
+            continue
+        title = str(car.get('title') or '')
+        tags = ' '.join(str(t) for t in (car.get('tags') or []))
+        haystack = ' '.join((title, tags)).lower()
         if needle in haystack or any(len(w) >= 3 and w in haystack for w in words):
-            key = car['title'].lower()
+            key = title.lower()
             if key not in seen:
                 seen.add(key)
                 hits.append(car)

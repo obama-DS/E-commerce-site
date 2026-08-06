@@ -5,6 +5,10 @@ let favoriteProducts = [];
 let compareProducts = [];
 let recentlyViewed = [];
 
+const API_BASE = window.location.protocol.indexOf('http') === 0
+  ? window.location.origin
+  : 'http://127.0.0.1:8000';
+
 function trackSignal(type, ...args) {
   const rec = window.Recommendations;
   if (!rec || !rec.signals) return;
@@ -334,7 +338,7 @@ function shuffleArray(array) {
 async function fetchTrendingCars(options = {}) {
   const poolSize = options.poolSize || TRENDING_POOL_SIZE;
   try {
-    const response = await fetch(`/api/trending-cars?limit=${poolSize}`);
+    const response = await fetch(`${API_BASE}/api/trending-cars?limit=${poolSize}`);
     if (!response.ok) throw new Error(`Trending API responded ${response.status}`);
 
     const data = await response.json();
@@ -439,7 +443,7 @@ async function recommendCars() {
   showOwnerMessage('Loading intelligent recommendations...', '#065f46');
 
   try {
-    const response = await fetch('/api/recommendations', {
+    const response = await fetch(`${API_BASE}/api/recommendations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1378,6 +1382,11 @@ function startEditProduct(card) {
   const price = card.querySelector('.price')?.textContent || '';
   const description = card.querySelector('.product-description')?.textContent || '';
   const tags = card.dataset.search || '';
+
+  if (window.AppRouter) {
+    window.AppRouter.navigate('admin');
+  }
+
   const titleInput = document.getElementById('newTitle');
   const imageInput = document.getElementById('newImage');
   const priceInput = document.getElementById('newPrice');

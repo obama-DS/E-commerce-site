@@ -20,6 +20,7 @@
     cart: { label: 'Cart' },
     wishlist: { label: 'Wishlist' },
     profile: { label: 'My Account' },
+    admin: { label: 'Admin Dashboard' },
     recommendations: { label: 'Car Recommender' },
     kb: { label:'Knowledge Base' }
   };
@@ -79,7 +80,16 @@
   }
 
   function render() {
-    const { name, params } = parseLocation();
+    let { name, params } = parseLocation();
+
+    if (name === 'admin') {
+      const user = window.ObamaAuth && window.ObamaAuth.getUser ? window.ObamaAuth.getUser() : null;
+      if (!(user && user.is_admin)) {
+        name = 'home';
+        params = new URLSearchParams();
+        window.location.hash = '#/home';
+      }
+    }
 
     document.querySelectorAll('[data-page]').forEach((section) => {
       const active = section.dataset.page === name;

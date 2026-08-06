@@ -21,6 +21,10 @@
 (function () {
   'use strict';
 
+  var API_BASE = window.location.protocol.indexOf('http') === 0
+    ? window.location.origin
+    : 'http://127.0.0.1:8000';
+
   /* ==================================================================
      Signals journal
      ================================================================== */
@@ -134,7 +138,7 @@
     opts = opts || {};
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, opts.timeout || 6000) : null;
-    return fetch(path, {
+    return fetch(API_BASE + path, {
       method: body ? 'POST' : 'GET',
       headers: body ? { 'Content-Type': 'application/json' } : undefined,
       body: body ? JSON.stringify(body) : undefined,

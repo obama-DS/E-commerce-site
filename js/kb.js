@@ -9,6 +9,10 @@
 (function () {
   'use strict';
 
+  var API_BASE = window.location.protocol.indexOf('http') === 0
+    ? window.location.origin
+    : 'http://127.0.0.1:8000';
+
   var state = {
     q: '',
     category: '',
@@ -55,7 +59,7 @@
     } else if (options.body !== undefined) {
       init.body = options.body;
     }
-    return fetch(path, init).then(function (res) {
+    return fetch(API_BASE + path, init).then(function (res) {
       return res.json().catch(function () { return null; }).then(function (data) {
         if (!res.ok) {
           var detail = data && data.detail;

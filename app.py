@@ -12,6 +12,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Header, Request, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sklearn.compose import ColumnTransformer
@@ -38,6 +39,16 @@ except Exception:
 app = FastAPI(
     title="Obama Store API",
     description="Backend API for the Obama Store — car recommender powered by a local CSV dataset and ML model, plus the AI product recommendation engine."
+)
+
+# Allow the frontend to call the API from any origin (localhost, file://,
+# or another machine on the network) without CORS errors.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ------------------------------------------------------------------
@@ -603,6 +614,12 @@ async def startup_event() -> None:
         contact=STORE_CONTACT,
         recommend_cars_fn=_recommend_cars,
     )
+    # Predictions are baked into the catalog; drop the training model to free
+    # memory on low-RAM machines (the gradient boosting pipeline can be large).
+    model = None
+    car_values = None
+    import gc
+    gc.collect()
 
 
 @app.get('/api/trending-cars')

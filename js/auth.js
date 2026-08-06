@@ -12,6 +12,13 @@
   var STORAGE_KEY = 'obama-store-session';
   var session = null;
 
+  // Resolve the API host. When the page is served over http(s) use the same
+  // origin; when opened directly as a file:// page, fall back to the local
+  // server so login and account calls still work.
+  var API_BASE = window.location.protocol.indexOf('http') === 0
+    ? window.location.origin
+    : 'http://127.0.0.1:8000';
+
   function loadSession() {
     try {
       session = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -46,7 +53,7 @@
   }
 
   function api(path, options) {
-    return fetch(path, options).then(function (res) {
+    return fetch(API_BASE + path, options).then(function (res) {
       return res.json().catch(function () {
         return null;
       }).then(function (data) {
@@ -154,6 +161,25 @@
     var kbLink = document.getElementById('kbAdminLink');
     if (kbLink) {
       kbLink.hidden = !(signedIn && user.is_admin);
+    }
+
+    var adminDashboardLink = document.getElementById('adminDashboardLink');
+    if (adminDashboardLink) {
+      adminDashboardLink.hidden = !(signedIn && user.is_admin);
+    }
+
+    var adminFooterLink = document.getElementById('adminFooterLink');
+    if (adminFooterLink) {
+      adminFooterLink.hidden = !(signedIn && user.is_admin);
+    }
+
+    document.body.classList.toggle('is-admin', !!(signedIn && user.is_admin));
+
+    if (window.AppRouter) {
+      var hash = window.location.hash.replace(/^#\/?/, '');
+      if (!(signedIn && user.is_admin) && (hash === 'admin')) {
+        window.AppRouter.navigate('home');
+      }
     }
   }
 
