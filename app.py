@@ -1547,14 +1547,20 @@ def _kb_reply(message: str, session: dict, history: List[dict]):
 
 
 def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
-    if CHAT_BACKEND == 'llm':
-        llm_result = _llm_reply(message, session, history)
-        if llm_result is not None:
-            return llm_result
+    """Deterministic-first, LLM-for-free-form routing.
 
-    text = message.lower().strip()
+    Order:
+      1. Active multi-step car flow  -> consistent flow UX
+      2. Knowledge base              -> uploaded knowledge, offline-capable
+      3. Rule intents                -> deterministic store answers (same
+                                        answer every time, no LLM needed)
+      4. LLM (best-effort)           -> only free-form chat rules missed
+      5. Graceful fallback           -> never an empty/broken reply
 
-    # Active multi-step flow takes priority.
+    Store questions therefore get identical answers whether or not the LLM
+    is reachable — the LLM only handles open-ended chat on top.
+    """
+    # Active multi-step flow takes priority (consistent flow UX).
     if session.get('flow') == 'car':
         flow_result = _handle_car_flow(message, session)
         if flow_result is not None:
@@ -1565,6 +1571,37 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
     kb_result = _kb_reply(message, session, history)
     if kb_result is not None:
         return kb_result
+
+    # Deterministic rule engine — returns None only when nothing matched.
+    rule_result = _rule_intents(message, session, history)
+    if rule_result is not None:
+        return rule_result
+
+    # LLM only for what the rules couldn't answer (free-form chat).
+    if CHAT_BACKEND == 'llm':
+        try:
+            llm_result = _llm_reply(message, session, history)
+            if llm_result is not None:
+                return llm_result
+        except Exception as exc:
+            import sys
+            print('LLM path error: %r' % (exc,), file=sys.stderr)
+
+    # Last-resort graceful fallback — never an empty/broken reply.
+    return _text_reply(
+        "I'm not sure I caught that. 🤔 But here's what I'm great at — try one of these:\n"
+        "• \"do you have a MacBook?\"\n"
+        "• \"recommend a diesel car under 100,000\"\n"
+        "• \"how do I pay?\"\n"
+        "• \"how do I contact you?\"",
+        ['What can you do?', 'Recommend a car', "What's trending?"],
+    )
+
+
+def _rule_intents(message: str, session: dict, history: List[dict]):
+    """Deterministic intent engine. Returns a response dict, or None when no
+    rule confidently matched (so the caller may try the LLM)."""
+    text = message.lower().strip()
 
     # ---- intents -----------------------------------------------------
 
