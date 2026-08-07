@@ -65,6 +65,7 @@ def _car_catalog():
 # stop hammering it for a short cooldown so chats fall back to the rule
 # engine instantly instead of waiting out every retry.
 _AUTH_BREAKER = {'fails': 0, 'until': 0.0}
+_QUOTA_BREAKER = {'until': 0.0}
 _breaker_lock = threading.Lock()
 
 
@@ -81,10 +82,18 @@ def _report_auth_success():
         _AUTH_BREAKER['until'] = 0.0
 
 
+def _report_quota_fail(seconds):
+    with _breaker_lock:
+        _QUOTA_BREAKER['until'] = time.monotonic() + max(seconds, 10)
+
+
 def _llm_blocked() -> bool:
     with _breaker_lock:
-        return bool(_AUTH_BREAKER['until']
-                    and time.monotonic() < _AUTH_BREAKER['until'])
+        if _AUTH_BREAKER['until'] and time.monotonic() < _AUTH_BREAKER['until']:
+            return True
+        if _QUOTA_BREAKER['until'] > time.monotonic():
+            return True
+        return False
 
 
 def _api_key() -> str:
