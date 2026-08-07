@@ -1984,14 +1984,8 @@ def _rule_intents(message: str, session: dict, history: List[dict]):
             action=_open_product_action(hits),
         )
 
-    return _text_reply(
-        "I'm not sure I caught that. 🤔 But here's what I'm great at — try one of these:\n"
-        "• \"do you have a MacBook?\"\n"
-        "• \"recommend a diesel car under 100,000\"\n"
-        "• \"how do I pay?\"\n"
-        "• \"how do I contact you?\"",
-        ['What can you do?', 'Recommend a car', "What's trending?"],
-    )
+    # No rule confidently matched -> hand off to the caller (LLM / fallback).
+    return None
 
 
 @app.post('/api/chat')
