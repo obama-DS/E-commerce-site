@@ -135,7 +135,7 @@ def _sleep(seconds: float, deadline=None):
         time.sleep(seconds)
 
 
-def _chat_completion(messages, tools=None, attempts=2, deadline=None):
+def _chat_completion(messages, tools=None, attempts=3, deadline=None):
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
     last_error = None
     for model in _models():
@@ -168,8 +168,15 @@ def _chat_completion(messages, tools=None, attempts=2, deadline=None):
                     return json.loads(resp.read().decode('utf-8'))
             except urllib.error.HTTPError as err:
                 last_error = err
-                if err.code in (404, 429):
-                    break          # try next model
+                # 401 (intermittent auth-key glitches) and 429 (quota) can
+                # clear on retry — ride them out with backoff before moving on.
+                if err.code in (401, 429):
+                    if attempt == attempts - 1:
+                        break
+                    _sleep(1 + attempt * 2, deadline)
+                    continue
+                if err.code == 404:
+                    break          # model unavailable -> try next model
                 if err.code == 408 or err.code >= 500:
                     if attempt == attempts - 1:
                         break

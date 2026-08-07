@@ -1998,5 +1998,18 @@ async def chat(req: ChatRequest) -> dict:
     return result
 
 
+# Prevent stale caching of the HTML shell (and CSS/JS) so the chat widget and
+# other updates always appear on reload instead of a cached page.
+@app.middleware("http")
+async def no_stale_cache(request, call_next):
+    response = await call_next(request)
+    ctype = response.headers.get("content-type", "").split(";")[0].strip()
+    if ctype in ("text/html",):
+        response.headers["Cache-Control"] = "no-store, must-revalidate"
+    elif ctype in ("text/css", "application/javascript", "text/javascript"):
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 # Mount static files last so API routes above are matched first.
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
