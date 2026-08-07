@@ -80,6 +80,7 @@ def _report_auth_success():
     with _breaker_lock:
         _AUTH_BREAKER['fails'] = 0
         _AUTH_BREAKER['until'] = 0.0
+        _QUOTA_BREAKER['until'] = 0.0
 
 
 def _report_quota_fail(seconds):
