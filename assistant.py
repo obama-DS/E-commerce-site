@@ -175,6 +175,7 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
     last_error = None
     auth_failed = False
+    quota_failed = False
     for model in _models():
         if deadline is not None and time.monotonic() > deadline:
             break
