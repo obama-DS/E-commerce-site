@@ -1760,7 +1760,7 @@ _UNITS = {
 }
 
 _MATH_ALLOWED = (
-    ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.Mod,
+    ast.Expression, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.Mod,
     ast.USub, ast.UAdd, ast.BinOp, ast.UnaryOp, ast.Constant,
 )
 
