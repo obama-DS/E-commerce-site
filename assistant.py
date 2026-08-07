@@ -192,12 +192,20 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
             )
             try:
                 with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    return json.loads(resp.read().decode('utf-8'))
+                    data = json.loads(resp.read().decode('utf-8'))
+                    _report_auth_success()
+                    return data
             except urllib.error.HTTPError as err:
                 last_error = err
-                # 401 (intermittent auth-key glitches) and 429 (quota) can
-                # clear on retry — ride them out with backoff before moving on.
-                if err.code in (401, 429):
+                if err.code in (401, 403):
+                    # Auth rejection (e.g. flaky AQ keys at Google). One quick
+                    # retry rides out transient glitches, then move on fast.
+                    _report_auth_fail()
+                    if attempt == 0:
+                        _sleep(0.4, deadline)
+                        continue
+                    break
+                if err.code == 429:
                     if attempt == attempts - 1:
                         break
                     _sleep(1 + attempt * 2, deadline)
