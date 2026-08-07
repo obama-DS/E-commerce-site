@@ -1180,6 +1180,11 @@ def answer(message, session, client_history):
     if not message:
         return None
 
+    # Provider is in an auth cooldown -> let the rule engine answer instantly.
+    if _llm_blocked():
+        _log.info('LLM in auth cooldown; answering from rule engine')
+        return None
+
     deadline = time.monotonic() + float(os.environ.get('LLM_MAX_SECONDS', '60'))
     try:
         memory = _build_messages(session, message, client_history)
