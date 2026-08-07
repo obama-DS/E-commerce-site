@@ -1546,6 +1546,422 @@ def _kb_reply(message: str, session: dict, history: List[dict]):
     )
 
 
+# ---- offline general knowledge (no LLM required) ----------------------
+# Deterministic answers to common general questions so the bot can talk
+# about non-store topics even while the LLM is rate-limited or unreachable.
+# Anything not covered here falls through to the LLM as before.
+
+_GENERAL_DEFS = {
+    # science / space
+    "gravity": "Gravity is the force that pulls objects with mass toward each other. On Earth it makes things fall at about 9.8 m/s².",
+    "photosynthesis": "Photosynthesis is how plants make food — they turn sunlight, water and CO₂ into glucose and release oxygen as a byproduct.",
+    "speed of light": "The speed of light in a vacuum is about 299,792 km per second — roughly 300,000 km/s. Nothing in the universe travels faster.",
+    "big bang": "The Big Bang theory says the universe began expanding from an extremely hot, dense state about 13.8 billion years ago.",
+    "black hole": "A black hole is a region of space where gravity is so strong that not even light can escape it.",
+    "water": "Water is a molecule of two hydrogen atoms and one oxygen atom (H₂O). It covers about 71% of Earth's surface.",
+    "dna": "DNA is the molecule that carries the genetic instructions for life. A single human cell holds about 2 meters of it.",
+    "atom": "An atom is the smallest unit of an element — a nucleus of protons and neutrons surrounded by electrons.",
+    "evolution": "Evolution is the process by which species change over generations through natural selection, first described by Charles Darwin.",
+    "artificial intelligence": "Artificial intelligence (AI) is software that can learn, reason and make decisions — like me! 🤖",
+    "ai": "Artificial intelligence (AI) is software that can learn, reason and make decisions — like me! 🤖",
+    "internet": "The internet is a worldwide network of connected computers that lets us share information — it grew out of ARPANET in 1969.",
+    "computer": "A computer is a machine that processes data by executing instructions. The first electronic computers filled entire rooms.",
+    "energy": "Energy is the ability to do work. It comes in many forms — kinetic, thermal, chemical, electrical and more — but can't be created or destroyed.",
+    "sound": "Sound is a vibration that travels through air (or other matter) as waves. In air it moves at about 343 m/s.",
+    "thunder": "Thunder is the shockwave of air rapidly expanding when lightning heats it to about 30,000°C.",
+    "electricity": "Electricity is the flow of electric charge, usually electrons. It travels through wires at nearly the speed of light.",
+    "magnetism": "Magnetism is the force produced by moving electric charges. Earth itself acts like a giant magnet.",
+    "planet": "A planet is a large body that orbits a star, is round from its own gravity, and has cleared its orbit of debris.",
+    "sun": "The Sun is a star at the center of our solar system. It's about 4.6 billion years old and holds 99.86% of the system's mass.",
+    "moon": "The Moon is Earth's natural satellite — 384,400 km away, and the only other world humans have walked on.",
+    "galaxy": "A galaxy is a huge collection of stars, gas and dust bound by gravity. Our Milky Way alone has hundreds of billions of stars.",
+    "universe": "The universe is everything that exists — all space, time, matter and energy. It's about 13.8 billion years old.",
+    "star": "A star is a glowing ball of gas that shines by nuclear fusion in its core — like our Sun.",
+    # geography
+    "capital of france": "The capital of France is **Paris** 🇫🇷 — the City of Light.",
+    "capital of ethiopia": "The capital of Ethiopia is **Addis Ababa** 🇪🇹.",
+    "capital of japan": "The capital of Japan is **Tokyo**.",
+    "capital of the united states": "The capital of the United States is **Washington, D.C.**",
+    "capital of the usa": "The capital of the United States is **Washington, D.C.**",
+    "capital of the uk": "The capital of the United Kingdom is **London**.",
+    "capital of china": "The capital of China is **Beijing**.",
+    "capital of russia": "The capital of Russia is **Moscow**.",
+    "capital of egypt": "The capital of Egypt is **Cairo**.",
+    "capital of germany": "The capital of Germany is **Berlin**.",
+    "capital of italy": "The capital of Italy is **Rome**.",
+    "capital of kenya": "The capital of Kenya is **Nairobi**.",
+    "capital of nigeria": "The capital of Nigeria is **Abuja**.",
+    "largest country": "Russia is the largest country by area — over 17 million km².",
+    "largest ocean": "The Pacific is the largest and deepest ocean, covering about a third of Earth's surface.",
+    "longest river": "The Nile is usually considered the longest river, at about 6,650 km.",
+    "highest mountain": "Mount Everest is the highest peak — 8,849 m above sea level.",
+    "largest continent": "Asia is the largest continent by both area and population.",
+    "largest desert": "The Sahara is the largest hot desert. Antarctica is actually the largest desert overall.",
+    "largest lake": "The Caspian Sea is the largest lake by area; Lake Superior is the largest freshwater lake by surface area.",
+    "great wall of china": "The Great Wall of China stretches about 21,000 km across northern China.",
+    "sahara desert": "The Sahara is the world's largest hot desert, covering most of North Africa — nearly as big as the United States.",
+    "nile river": "The Nile is about 6,650 km long and flows through 11 countries in northeastern Africa.",
+    # space facts
+    "largest planet": "Jupiter is the largest planet — more than 1,300 Earths would fit inside it.",
+    "smallest planet": "Mercury is the smallest planet in our solar system.",
+    "hottest planet": "Venus is the hottest planet — its thick CO₂ atmosphere traps heat at around 465°C.",
+    "coldest planet": "Neptune is the coldest planet, with temperatures near -220°C.",
+    "red planet": "Mars is called the Red Planet because iron oxide (rust) colors its surface.",
+    "distance to the moon": "The Moon is about 384,400 km from Earth — roughly 30 Earths away.",
+    "distance to the sun": "The Sun is about 150 million km from Earth — one astronomical unit (AU).",
+    # animals
+    "fastest animal": "The peregrine falcon is the fastest animal, diving at over 380 km/h. On land, the cheetah tops out around 110 km/h.",
+    "largest animal": "The blue whale is the largest animal ever — up to 30 m long and around 180 tonnes.",
+    "largest land animal": "The African elephant is the largest land animal.",
+    "tallest animal": "The giraffe is the tallest animal, standing up to about 5.5 m.",
+    "blue whale": "The blue whale is the largest animal that has ever lived — its heart alone is the size of a small car.",
+    "cheetah": "The cheetah is the fastest land animal, sprinting at up to 110 km/h in short bursts.",
+    "penguin": "Penguins are flightless birds that are excellent swimmers — the emperor penguin can dive over 500 m deep.",
+    "octopus": "An octopus has three hearts, eight arms, and blue blood.",
+    "spider": "Spiders have eight legs and usually eight eyes — but no antennae.",
+    "giraffe": "Giraffes are the tallest animals on land, and they even have 7 neck bones — the same number as humans.",
+    # human body
+    "bones": "An adult human has 206 bones (babies start with about 300).",
+    "bone": "An adult human has 206 bones (babies start with about 300).",
+    "muscles": "There are about 600 muscles in the human body.",
+    "teeth": "Adults have 32 teeth; children have 20 baby teeth.",
+    "heart": "The human heart is about the size of a fist and beats roughly 100,000 times a day.",
+    "largest organ": "The skin is the largest organ — about 2 m² and up to 15% of body weight.",
+    "blood": "An adult human has about 5 liters of blood.",
+    # math
+    "pi": "Pi (π) ≈ 3.14159 — the ratio of a circle's circumference to its diameter.",
+    "zero": "Zero represents nothing, and it changed mathematics forever by enabling our place-value number system.",
+    "infinity": "Infinity isn't a number — it's the concept of having no limit or end.",
+    "prime number": "A prime number is a whole number greater than 1 divisible only by 1 and itself — like 2, 3, 5 and 7.",
+    # history / people
+    "lightbulb": "Thomas Edison popularized the practical lightbulb in 1879, though several inventors worked on it before him.",
+    "telephone": "Alexander Graham Bell patented the telephone in 1876.",
+    "mona lisa": "The Mona Lisa was painted by Leonardo da Vinci in the early 1500s and hangs in the Louvre, Paris.",
+    "pyramids": "The Egyptian pyramids were built as royal tombs around 2560 BC — the Great Pyramid of Giza is the oldest of the Seven Wonders.",
+    "roman empire": "The Western Roman Empire fell in 476 AD; the Eastern (Byzantine) Empire lasted until 1453.",
+    "albert einstein": "Albert Einstein was a physicist who changed our view of the universe with relativity (E = mc²).",
+    "shakespeare": "William Shakespeare (1564–1616) is considered the greatest writer in English — he wrote about 39 plays.",
+    # culture / general
+    "alphabet": "The English alphabet has 26 letters — 5 vowels and 21 consonants.",
+    "rainbow": "A rainbow appears when sunlight refracts through raindrops and splits into seven colors: red, orange, yellow, green, blue, indigo, violet.",
+    # life / ideas
+    "meaning of life": "Philosophers have argued for millennia — but many would say the meaning of life is whatever gives *you* purpose: love, learning, helping others. What do you think it is?",
+    "love": "Love is a deep bond of care and affection. Some say it's chemistry, others say it's a choice — either way, it's one of the most powerful forces we know.",
+    "happiness": "Happiness isn't a destination — it's usually found in small daily moments, good relationships, and doing work that matters.",
+    "success": "Success looks different for everyone. A simple definition: making progress on the things that matter most to you.",
+    "friendship": "Friendship is a mutual bond of trust, support and shared experience — one of the healthiest things you can have.",
+    "time": "Time is the dimension in which events unfold. We can't slow it, bank it, or rewind it — so spending it well matters.",
+    "money": "Money is a tool for trading value — it can buy freedom and comfort, but it isn't happiness by itself.",
+    "dream": "Dreams are the stories your brain weaves during REM sleep. Scientists still debate why, but they likely help process memories and emotions.",
+    "fear": "Fear is a survival response — it sharpens our senses. Facing small fears is often the best way to shrink them.",
+    "knowledge": "Knowledge is information you understand and can use. It compounds — the more you learn, the easier learning gets.",
+    "purpose": "Purpose is the sense that your actions matter. It usually comes from serving something bigger than yourself.",
+}
+
+_GENERAL_PHRASES = [
+    ("how many continents", "There are seven continents: Africa, Antarctica, Asia, Europe, North America, Oceania, and South America."),
+    ("how many planets", "There are eight planets in our solar system: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune."),
+    ("how many bones", "An adult human has 206 bones."),
+    ("how many bones are there", "An adult human has 206 bones."),
+    ("how many bones does", "An adult human has 206 bones."),
+    ("how many colors", "Seven — red, orange, yellow, green, blue, indigo, and violet (ROYGBIV)."),
+    ("how many days in a year", "365 days (366 in a leap year)."),
+    ("how many days in a week", "Seven days in a week."),
+    ("how many months", "Twelve months in a year."),
+    ("how many hours in a day", "24 hours in a day."),
+    ("how many minutes in an hour", "60 minutes in an hour."),
+    ("how many seconds in a minute", "60 seconds in a minute."),
+    ("how many letters in the alphabet", "26 letters in the English alphabet."),
+    ("how many zeros in a million", "A million has six zeros (1,000,000). A billion has nine, a trillion has twelve."),
+    ("how many stars", "Our galaxy alone has 100–400 billion stars — and there are billions of galaxies in the universe."),
+    ("how old is the earth", "Earth is about 4.54 billion years old."),
+    ("how old is the universe", "The universe is about 13.8 billion years old."),
+    ("how far is the moon", "The Moon is about 384,400 km from Earth."),
+    ("how far is the sun", "The Sun is about 150 million km from Earth."),
+    ("how big is the sun", "The Sun's diameter is about 1.39 million km — 109 times Earth's — and it holds 99.86% of the solar system's mass."),
+    ("why is the sky blue", "Sunlight scatters in the atmosphere, and blue light scatters the most — so the sky looks blue."),
+    ("why do we dream", "Dreams likely help your brain process memories and emotions during REM sleep."),
+    ("why do we yawn", "Still debated — yawns may help cool the brain and keep you alert."),
+    ("why do we blink", "We blink to keep our eyes moist, clean and protected — about 15–20 times a minute."),
+    ("why is the ocean salty", "Rain erodes salts from rocks and rivers carry them to the sea, where evaporation leaves them behind."),
+    ("who painted the mona lisa", "Leonardo da Vinci painted the Mona Lisa in the early 1500s."),
+    ("who invented the lightbulb", "Thomas Edison popularized the practical lightbulb in 1879."),
+    ("who invented the telephone", "Alexander Graham Bell patented the telephone in 1876."),
+    ("who invented the internet", "No single person — the internet grew out of ARPANET in 1969 with contributions from many researchers."),
+    ("who wrote romeo and juliet", "William Shakespeare wrote Romeo and Juliet."),
+    ("who was the first man on the moon", "Neil Armstrong, on July 20, 1969 — \"one small step for man, one giant leap for mankind.\""),
+    ("fastest animal in the world", "The peregrine falcon, diving at over 380 km/h. On land, the cheetah tops out around 110 km/h."),
+    ("largest animal in the world", "The blue whale — up to 30 m long and about 180 tonnes."),
+    ("biggest animal in the world", "The blue whale — up to 30 m long and about 180 tonnes."),
+    ("tallest animal in the world", "The giraffe — up to about 5.5 m tall."),
+    ("largest planet in the solar system", "Jupiter — more than 1,300 Earths would fit inside it."),
+    ("biggest planet", "Jupiter — more than 1,300 Earths would fit inside it."),
+    ("smallest planet", "Mercury is the smallest planet."),
+    ("hottest planet", "Venus is the hottest planet, at around 465°C."),
+    ("coldest planet", "Neptune is the coldest planet, near -220°C."),
+    ("what is the largest ocean", "The Pacific Ocean is the largest and deepest."),
+    ("what is the highest mountain", "Mount Everest — 8,849 m above sea level."),
+    ("what is the longest river", "The Nile — about 6,650 km long."),
+    ("what is the largest desert", "The Sahara is the largest hot desert; Antarctica is the largest overall."),
+    ("what is the largest country", "Russia is the largest country by area."),
+    ("what do bees make", "Honey! 🍯"),
+    ("do penguins fly", "No — penguins can't fly, but they're brilliant swimmers."),
+    ("how long do elephants live", "Wild elephants typically live 60–70 years."),
+    ("how long do dogs live", "Dogs generally live 10–13 years, depending on the breed."),
+    ("how long is the great wall of china", "The Great Wall of China stretches about 21,000 km."),
+    ("capital of france", "Paris 🇫🇷"),
+    ("capital of ethiopia", "Addis Ababa 🇪🇹"),
+    ("how many legs does a spider", "Eight."),
+    ("how many legs does an insect", "Six."),
+    ("how many hearts does an octopus", "Three."),
+    ("how many stomachs does a cow", "Four — that's why they chew cud."),
+]
+
+_RANDOM_FACTS = [
+    "Did you know? Honey never spoils — archaeologists have found 3,000-year-old honey that's still edible. 🍯",
+    "Did you know? Octopuses have three hearts and blue blood.",
+    "Did you know? A day on Venus is longer than a year on Venus.",
+    "Did you know? Bananas are berries, but strawberries aren't.",
+    "Did you know? Sharks are older than trees — they've been around for over 400 million years.",
+    "Did you know? The human brain generates about 20 watts of power — enough to light a small bulb. 💡",
+    "Did you know? There are more possible chess games than atoms in the observable universe. ♟️",
+    "Did you know? A single bolt of lightning is about five times hotter than the surface of the Sun. ⚡",
+    "Did you know? Honeybees can recognize human faces.",
+    "Did you know? The longest mountain range on Earth is underwater — the Mid-Ocean Ridge, about 65,000 km long.",
+]
+
+_JOKES = [
+    "Why don't scientists trust atoms? Because they make up everything! 😄",
+    "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾",
+    "Why don't skeletons fight each other? They don't have the guts. 💀",
+    "I told my computer I needed a break — it said, \"no problem, go reboot yourself.\" 💻",
+    "Why did the bicycle fall over? Because it was two-tired! 🚲",
+    "What do you call a fish with no eyes? A fsh. 🐟",
+    "Why did the math book look sad? It had too many problems. 📘",
+    "What do you call a bear with no teeth? A gummy bear. 🐻",
+]
+
+_UNITS = {
+    "km": ("length", 1000.0), "kilometer": ("length", 1000.0), "kilometers": ("length", 1000.0),
+    "mi": ("length", 1609.344), "mile": ("length", 1609.344), "miles": ("length", 1609.344),
+    "m": ("length", 1.0), "meter": ("length", 1.0), "meters": ("length", 1.0),
+    "ft": ("length", 0.3048), "foot": ("length", 0.3048), "feet": ("length", 0.3048),
+    "in": ("length", 0.0254), "inch": ("length", 0.0254), "inches": ("length", 0.0254),
+    "cm": ("length", 0.01), "centimeter": ("length", 0.01), "centimeters": ("length", 0.01),
+    "kg": ("mass", 1.0), "kilogram": ("mass", 1.0), "kilograms": ("mass", 1.0),
+    "g": ("mass", 0.001), "gram": ("mass", 0.001), "grams": ("mass", 0.001),
+    "lb": ("mass", 0.45359237), "lbs": ("mass", 0.45359237), "pound": ("mass", 0.45359237), "pounds": ("mass", 0.45359237),
+    "oz": ("mass", 0.0283495231), "ounce": ("mass", 0.0283495231), "ounces": ("mass", 0.0283495231),
+    "l": ("volume", 0.001), "liter": ("volume", 0.001), "liters": ("volume", 0.001), "litres": ("volume", 0.001),
+    "ml": ("volume", 0.000001), "milliliter": ("volume", 0.000001), "milliliters": ("volume", 0.000001),
+    "gal": ("volume", 0.00378541178), "gallon": ("volume", 0.00378541178), "gallons": ("volume", 0.00378541178),
+    "cup": ("volume", 0.000236588), "cups": ("volume", 0.000236588),
+}
+
+_MATH_ALLOWED = (
+    ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.Mod,
+    ast.USub, ast.UAdd, ast.BinOp, ast.UnaryOp, ast.Constant,
+)
+
+
+def _safe_eval_math(expr: str):
+    try:
+        tree = ast.parse(expr, mode='eval')
+    except SyntaxError:
+        return None
+    for node in ast.walk(tree):
+        if not isinstance(node, _MATH_ALLOWED):
+            return None
+    try:
+        value = eval(compile(tree, '<math>', 'eval'), {'__builtins__': {}}, {})
+    except Exception:
+        return None
+    if isinstance(value, (int, float)) and abs(value) < 1e15:
+        return value
+    return None
+
+
+def _definition_topic(text: str) -> Optional[str]:
+    patterns = [
+        r'(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+|a\s+|an\s+|some\s+)?(.{1,40})$',
+        r'define\s+(?:the\s+|a\s+|an\s+)?(.{1,40})$',
+        r'(?:the\s+)?(?:meaning|definition)\s+of\s+(.{1,40})$',
+        r'(?:tell me about|what do you know about|facts about|info about|information about)\s+(?:the\s+|a\s+|an\s+)?(.{1,40})$',
+    ]
+    for pat in patterns:
+        match = re.search(pat, text)
+        if match:
+            topic = match.group(1).strip().rstrip('?.!,;').strip()
+            topic = re.sub(r'^(the|a|an|some)\s+', '', topic)
+            return topic.lower()
+    return None
+
+
+def _try_smalltalk(text: str):
+    if _has(text, ('i love you', 'love you obama', 'i like you', 'you are the best', 'you are great')):
+        return _text_reply(
+            "Aww, I like you too! ❤️ Now tell me — what are we finding for you today?",
+            ['What can you do?', 'Recommend a car', "What's trending?"],
+        )
+    if _has(text, ('i hate you', 'you are stupid', 'you are dumb', 'you suck', 'bad bot', 'useless')):
+        return _text_reply(
+            "Ouch! 😅 I'm still learning. Point me at what you need and I'll make it right — try \"show me phones\" or \"recommend a car\".",
+            ['Show me phones', 'Recommend a car', 'What can you do?'],
+        )
+    if _has(text, ('are you a robot', 'are you a machine', 'are you human', 'are you real',
+                   'are you alive', 'are you an ai', 'are you a bot', 'are you an ai')):
+        return _text_reply(
+            "I'm an AI assistant powered by machine learning — not a person, but I'm here 24/7 to help you shop and chat. 🤖",
+            ['What can you do?', 'Recommend a car', 'Contact us'],
+        )
+    if _has(text, ('are you smart', 'are you intelligent', 'you are smart', 'you are clever')):
+        return _text_reply(
+            "I try my best! I know the store inside out and I enjoy a good general question too. 🧠",
+            ['What can you do?', 'Recommend a car', "What's trending?"],
+        )
+    if _has(text, ('can you think', 'do you think', 'are you conscious', 'do you have feelings', 'do you feel')):
+        return _text_reply(
+            "I process language and patterns — I can't feel emotions the way people do, but I'll always do my best to help. 😊",
+            ['What can you do?', 'Recommend a car', 'Contact us'],
+        )
+    if _has(text, ('your purpose', 'why do you exist', 'what do you do here')):
+        return _text_reply(
+            "My job is simple: help you find products, pick cars, and get fast answers about Obama Store — plus chat about whatever's on your mind.",
+            ['What can you do?', 'Recommend a car', "What's trending?"],
+        )
+    if _has(text, ('are you bored', 'are you tired', 'are you sleeping')):
+        return _text_reply(
+            "Never bored when there's a whole catalog to explore — and I don't sleep! 😄",
+            ['Show me phones', 'Recommend a car', 'What can you do?'],
+        )
+    if _has(text, ('sing', 'sing a song', 'dance', 'do a backflip')):
+        return _text_reply(
+            "I'd love to, but my vocal cords are 1s and 0s. 🎶 Best I can do is recommend a trending car while you dance!",
+            ['Recommend a car', "What's trending?", 'Tell me a joke'],
+        )
+    return None
+
+
+def _try_joke(text: str):
+    if _has(text, ('joke', 'make me laugh', 'something funny', 'funny story')):
+        return _text_reply(random.choice(_JOKES), ['Tell me another', 'What can you do?'])
+    return None
+
+
+def _try_time(text: str):
+    import datetime as _dt
+    now = _dt.datetime.now()
+    if _has(text, ('what time', 'time is it', 'current time', 'whats the time', "what's the time", 'what is the time')):
+        return _text_reply(f"It's **{now.strftime('%I:%M %p')}** right now.", ['What can you do?', 'Recommend a car'])
+    if _has(text, ('what day', 'day is it', 'whats today', "what's today", 'what is today', 'today is what')):
+        return _text_reply(f"Today is **{now.strftime('%A')}**.", ['What can you do?', 'Recommend a car'])
+    if _has(text, ('what date', 'date is it', "what's the date", 'whats the date', 'todays date', "today's date", 'what is the date')):
+        return _text_reply(f"Today's date is **{now.strftime('%B %d, %Y')}**.", ['What can you do?', 'Recommend a car'])
+    if _has(text, ('what year', 'year is it', 'what is the year')):
+        return _text_reply(f"We're in **{now.year}**.", ['What can you do?', 'Recommend a car'])
+    return None
+
+
+def _try_math(text: str):
+    if not _has(text, ('what is', 'whats', 'what are', 'calculate', 'compute', 'how much is',
+                       'how much are', 'solve', 'math', 'equals', '="')):
+        return None
+    percent = re.search(r'(\d+(?:\.\d+)?)\s*%\s+of\s+(\d+(?:\.\d+)?)', text)
+    if percent:
+        part, whole = float(percent.group(1)), float(percent.group(2))
+        return _text_reply(
+            f"{part:g}% of {whole:g} is **{part / 100.0 * whole:,.2f}**.",
+            ['What can you do?', 'Recommend a car'],
+        )
+    expr = text.replace('^', '**').replace('×', '*').replace('÷', '/')
+    expr = re.sub(r'\bplus\b', '+', expr)
+    expr = re.sub(r'\bminus\b', '-', expr)
+    expr = re.sub(r'\btimes\b', '*', expr)
+    expr = re.sub(r'\bdivided by\b', '/', expr)
+    match = re.search(r'[-+*/().\d][-+*/().\d ]{2,60}[-+*/().\d]', expr)
+    if not match:
+        return None
+    value = _safe_eval_math(match.group(0))
+    if value is None:
+        return None
+    if float(value).is_integer():
+        return _text_reply(f"That works out to **{int(value):,}**.", ['What can you do?', 'Recommend a car'])
+    return _text_reply(f"That works out to **{value:,.2f}**.", ['What can you do?', 'Recommend a car'])
+
+
+def _try_convert(text: str):
+    if not _has(text, ('convert', 'how many', ' to ', ' in ', ' into ')):
+        return None
+    temp = re.search(r'(-?\d+(?:\.\d+)?)\s*(?:°?\s*(c|celsius))\s*(?:to|in|into)\s*(?:°?\s*(f|fahrenheit))', text)
+    if temp:
+        celsius = float(temp.group(1))
+        return _text_reply(f"{celsius:g}°C is **{celsius * 9.0 / 5.0 + 32:,.1f}°F**.", ['What can you do?', 'Recommend a car'])
+    temp = re.search(r'(-?\d+(?:\.\d+)?)\s*(?:°?\s*(f|fahrenheit))\s*(?:to|in|into)\s*(?:°?\s*(c|celsius))', text)
+    if temp:
+        fahrenheit = float(temp.group(1))
+        return _text_reply(f"{fahrenheit:g}°F is **{(fahrenheit - 32) * 5.0 / 9.0:,.1f}°C**.", ['What can you do?', 'Recommend a car'])
+    match = re.search(r'(-?\d+(?:\.\d+)?)\s*([a-z]+)\s+(?:to|in|into)\s+([a-z]+)', text)
+    if not match:
+        return None
+    try:
+        value = float(match.group(1))
+    except ValueError:
+        return None
+    from_unit = match.group(2).lower()
+    to_unit = match.group(3).lower()
+    if from_unit not in _UNITS or to_unit not in _UNITS:
+        return None
+    from_info = _UNITS[from_unit]
+    to_info = _UNITS[to_unit]
+    if from_info[0] != to_info[0]:
+        return None
+    result = value * from_info[1] / to_info[1]
+    return _text_reply(f"**{value:g} {from_unit}** is about **{result:,.2f} {to_unit}**.", ['What can you do?', 'Recommend a car'])
+
+
+def _try_definition(text: str):
+    topic = _definition_topic(text)
+    if not topic:
+        return None
+    answer = _GENERAL_DEFS.get(topic)
+    if not answer:
+        return None
+    return _text_reply(answer, ['What can you do?', 'Recommend a car', 'Tell me a fact'])
+
+
+def _try_phrase(text: str):
+    for needle, answer in _GENERAL_PHRASES:
+        if needle in text:
+            return _text_reply(answer, ['What can you do?', 'Recommend a car', 'Tell me a fact'])
+    return None
+
+
+def _try_random_fact(text: str):
+    if _has(text, ('tell me a fact', 'did you know', 'interesting fact', 'random fact',
+                   'trivia', 'surprise me', 'blow my mind', 'something interesting',
+                   'give me a fact')):
+        return _text_reply(random.choice(_RANDOM_FACTS), ['Tell me another', 'What can you do?'])
+    return None
+
+
+def _general_reply(message: str, session: dict, history: List[dict]):
+    """Offline general-knowledge responder — deterministic, no LLM needed.
+
+    Runs after the store rules miss, so general questions (facts, definitions,
+    math, units, small talk, jokes…) get a real answer instantly even while the
+    LLM is rate-limited or unreachable. Returns None to fall through to the LLM.
+    """
+    text = (message or '').lower().strip()
+    if not text:
+        return None
+    for handler in (_try_smalltalk, _try_joke, _try_time, _try_math,
+                    _try_convert, _try_definition, _try_phrase, _try_random_fact):
+        result = handler(text)
+        if result is not None:
+            return result
+    return None
+
+
 def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
     """Deterministic-first, LLM-for-free-form routing.
 
