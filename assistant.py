@@ -165,6 +165,7 @@ def _sleep(seconds: float, deadline=None):
 def _chat_completion(messages, tools=None, attempts=3, deadline=None):
     timeout = float(os.environ.get('LLM_TIMEOUT', '30'))
     last_error = None
+    auth_failed = False
     for model in _models():
         if deadline is not None and time.monotonic() > deadline:
             break
@@ -199,11 +200,13 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
                 last_error = err
                 if err.code in (401, 403):
                     # Auth rejection (e.g. flaky AQ keys at Google). One quick
-                    # retry rides out transient glitches, then move on fast.
+                    # retry rides out transient glitches, then stop — different
+                    # model names won't fix a rejected key.
                     _report_auth_fail()
                     if attempt == 0:
                         _sleep(0.4, deadline)
                         continue
+                    auth_failed = True
                     break
                 if err.code == 429:
                     if attempt == attempts - 1:
@@ -224,6 +227,8 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
                     break
                 _sleep(1 + attempt * 2, deadline)
                 continue
+        if auth_failed:
+            break
     if deadline is not None and time.monotonic() > deadline:
         raise TimeoutError('LLM deadline exceeded')
     if last_error is not None:
