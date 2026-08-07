@@ -96,6 +96,16 @@ def _llm_blocked() -> bool:
         return False
 
 
+def _is_quota_exhausted(err) -> bool:
+    try:
+        body = err.read().decode('utf-8', 'replace')
+    except Exception:
+        return False
+    low = body.lower()
+    return ('resource_exhausted' in low or 'quota' in low
+            or 'exceeded your current' in low)
+
+
 def _api_key() -> str:
     return (os.environ.get('OPENAI_API_KEY') or '').strip()
 
