@@ -22,6 +22,7 @@ Falls back to None on any error so app.py can use the rule engine.
 import json
 import logging
 import os
+import re
 import threading
 import time
 import urllib.error
