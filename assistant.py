@@ -98,14 +98,42 @@ def _llm_blocked() -> bool:
         return False
 
 
-def _is_quota_exhausted(err) -> bool:
+def _quota_info(err) -> tuple:
+    """Read a quota error once, returning (is_exhausted, retry_after_secs).
+
+    Gemini free-tier 429s carry the reset window in the body ("Please retry
+    in NN.Ns") and/or a Retry-After header; both are parsed so the caller can
+    wait out the reset instead of giving up immediately.
+    """
+    body = ''
     try:
         body = err.read().decode('utf-8', 'replace')
     except Exception:
-        return False
+        pass
     low = body.lower()
-    return ('resource_exhausted' in low or 'quota' in low
-            or 'exceeded your current' in low)
+    exhausted = ('resource_exhausted' in low or 'quota' in low
+                 or 'exceeded your current' in low)
+    retry_after = None
+    match = re.search(r'retry in\s+([0-9.]+)\s*s', low)
+    if match:
+        try:
+            retry_after = float(match.group(1))
+        except (TypeError, ValueError):
+            retry_after = None
+    if retry_after is None:
+        headers = getattr(err, 'headers', None)
+        if headers:
+            header = headers.get('Retry-After')
+            if header:
+                try:
+                    retry_after = float(header)
+                except (TypeError, ValueError):
+                    retry_after = None
+    return exhausted, retry_after
+
+
+def _is_quota_exhausted(err) -> bool:
+    return _quota_info(err)[0]
 
 
 def _api_key() -> str:
@@ -231,10 +259,18 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
                     auth_failed = True
                     break
                 if err.code == 429:
-                    if _is_quota_exhausted(err):
-                        # Free-tier quota drained; retrying won't help for
-                        # ~1 min, so trip a cooldown and answer from the rule
-                        # engine instead of blocking every chat.
+                    exhausted, retry_after = _quota_info(err)
+                    if exhausted:
+                        # Free-tier quota drained. When the provider says how
+                        # long until it resets and the turn's hard deadline has
+                        # room, wait once and retry so open-ended (general)
+                        # questions still get a real LLM answer. Otherwise trip
+                        # a cooldown and fall back so chats stay snappy.
+                        if retry_after and deadline is not None:
+                            remaining = deadline - time.monotonic()
+                            if remaining > retry_after + 5:
+                                _sleep(retry_after, deadline)
+                                continue
                         _report_quota_fail(45)
                         quota_failed = True
                         break
