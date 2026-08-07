@@ -243,7 +243,7 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
                     break
                 _sleep(1 + attempt * 2, deadline)
                 continue
-        if auth_failed:
+        if auth_failed or quota_failed:
             break
     if deadline is not None and time.monotonic() > deadline:
         raise TimeoutError('LLM deadline exceeded')
