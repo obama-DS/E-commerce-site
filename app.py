@@ -1994,6 +1994,13 @@ def _chat_reply(message: str, session: dict, history: List[dict]) -> dict:
     if rule_result is not None:
         return rule_result
 
+    # Offline general knowledge — deterministic answers to common general
+    # questions (facts, definitions, math, units, small talk, jokes), so
+    # general chat works even while the LLM is rate-limited or unreachable.
+    general_result = _general_reply(message, session, history)
+    if general_result is not None:
+        return general_result
+
     # LLM only for what the rules couldn't answer (free-form chat).
     if CHAT_BACKEND == 'llm':
         try:
