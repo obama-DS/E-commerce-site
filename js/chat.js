@@ -440,9 +440,14 @@
     busy = true;
     var typing = showTyping();
 
+    // Time out long requests so a hung backend never leaves the UI spinning.
+    var controller = (window.AbortController) ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 60000) : null;
+
     fetch((window.location.protocol.indexOf('http') === 0 ? window.location.origin : 'http://127.0.0.1:8000') + '/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller ? controller.signal : undefined,
       body: JSON.stringify({
         message: message,
         history: history.slice(-20),
@@ -450,22 +455,38 @@
         cart: getCartItems(),           // sync current cart for get_cart_summary
       })
     })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (data.session_id) { sessionId = data.session_id; saveSession(); }
-        hideTyping(typing);
-        appendMessage('assistant', data.reply || '', data.cards || []);
-        history.push({ role: 'assistant', content: data.reply || '' });
-        saveHistory();
-        renderFlow(data.flow || null);
-        renderSuggestions(data.suggestions || []);
-        handleAction(data.action || null);
+      .then(function (res) {
+        if (!res.ok) {
+          // Surface the real server status instead of guessing.
+          return res.text().then(function (body) {
+            throw new Error('HTTP ' + res.status + ': ' + body.slice(0, 200));
+          });
+        }
+        return res.json();
       })
-      .catch(function () {
+      .then(function (data) {
+        try {
+          if (data.session_id) { sessionId = data.session_id; saveSession(); }
+          hideTyping(typing);
+          appendMessage('assistant', data.reply || '', data.cards || []);
+          history.push({ role: 'assistant', content: data.reply || '' });
+          saveHistory();
+          renderFlow(data.flow || null);
+          renderSuggestions(data.suggestions || []);
+          handleAction(data.action || null);
+        } catch (e) {
+          // A renderer bug must not masquerade as a network failure.
+          console.error('chat render error', e);
+          hideTyping(typing);
+          appendMessage('assistant', data.reply || 'Hmm, I got a reply but had trouble showing it. Try asking again.');
+        }
+      })
+      .catch(function (err) {
         hideTyping(typing);
+        console.error('chat request failed', err);
         appendMessage('assistant', 'Sorry, I hit a network snag. 📡 Check your connection and try again.');
       })
-      .finally(function () { busy = false; });
+      .finally(function () { busy = false; if (timer) clearTimeout(timer); });
   }
 
   /* ================================================================
