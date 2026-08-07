@@ -218,6 +218,13 @@ def _chat_completion(messages, tools=None, attempts=3, deadline=None):
                     auth_failed = True
                     break
                 if err.code == 429:
+                    if _is_quota_exhausted(err):
+                        # Free-tier quota drained; retrying won't help for
+                        # ~1 min, so trip a cooldown and answer from the rule
+                        # engine instead of blocking every chat.
+                        _report_quota_fail(45)
+                        quota_failed = True
+                        break
                     if attempt == attempts - 1:
                         break
                     _sleep(1 + attempt * 2, deadline)
