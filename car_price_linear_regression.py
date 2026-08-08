@@ -105,4 +105,5 @@ def main():
 
 if __name__ == '__main__':
     main()
-#this car predictoin model shold be abandoned what is your name mym name is obama ans ans and where i live is fasfad from homwa wha ti will is knowinfn g that readlinlg nnthe bile idsi thw right thinifsn to
+#this car predictoin model shold be abandoned what is your name mym name is obama ans ans and where i live is fasfad from homwa wha ti will is knowinfn g that readlinlg nnthe bile idsi thw right thinifsn to why are
+thild 
